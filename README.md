@@ -2,7 +2,7 @@
 
 This is the JavaScript client library for the Identity.com Marketplace. It provides an interface for all capabilities on the blockchain, including accessing smart contract data, sending transactions (modifying blockchain data, smart contract state), exchanging CVC tokens and exchanging ETH (aka platform coin).
 
-[API Documentation](doc/index.html)
+[API Documentation](https://identity-com.github.io/marketplace-tx-js/doc/index.html)
 
 ## Getting started
 
@@ -85,7 +85,7 @@ If you are using this lib as a dependency, you still need to create ```./marketp
 
 The library is structured into these sub-modules:
 
-See the [API Documentation](doc/index.html) for more details
+See the [API Documentation](https://identity-com.github.io/marketplace-tx-js/doc/index.html) for more details
 
 #### Core modules
 
