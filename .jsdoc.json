@@ -1,0 +1,12 @@
+{
+  "opts": {
+    "template": "node_modules/docdash"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "source": {
+    "includePattern": ".+\\.js(doc)?$",
+    "include": ["./src", "./README.md"]
+  }
+}

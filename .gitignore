@@ -1,0 +1,23 @@
+.idea
+build
+dist
+node_modules
+
+# Integration test output from geth node
+/geth.log
+/.nyc_output/
+
+# Logs
+logs
+*.log
+
+# Directories used by tools like mocha & istanbul
+coverage
+shippable
+
+# config files are encrypted - do not include decrypted versions
+/marketplace-tx/config/*.json
+/encryption-key
+
+# Shared artifacts
+/contracts/stage/*.json

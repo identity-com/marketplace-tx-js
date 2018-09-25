@@ -1,0 +1,6 @@
+{
+  "contracts": {
+    "dir": "../artifacts/deployed"
+  },
+  "txSigningTimeout": 100
+}

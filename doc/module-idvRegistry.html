@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>idvRegistry - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-support_errors-InvalidNonceError.html">InvalidNonceError</a></li><li><a href="module-support_nonceManager-Account.html">Account</a><ul class='methods'><li data-type='method'><a href="module-support_nonceManager-Account.html#acquireNonce">acquireNonce</a></li><li data-type='method'><a href="module-support_nonceManager-Account.html#clear">clear</a></li><li data-type='method'><a href="module-support_nonceManager-Account.html#releaseNonce">releaseNonce</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-escrow.html">escrow</a><ul class='methods'><li data-type='method'><a href="module-escrow.html#.calculatePlacementId">calculatePlacementId</a></li><li data-type='method'><a href="module-escrow.html#.place">place</a></li><li data-type='method'><a href="module-escrow.html#.placeBatch">placeBatch</a></li><li data-type='method'><a href="module-escrow.html#.refund">refund</a></li><li data-type='method'><a href="module-escrow.html#.refundBatch">refundBatch</a></li><li data-type='method'><a href="module-escrow.html#.release">release</a></li><li data-type='method'><a href="module-escrow.html#.releaseBatch">releaseBatch</a></li><li data-type='method'><a href="module-escrow.html#.setFeeRate">setFeeRate</a></li><li data-type='method'><a href="module-escrow.html#.setTimeoutThreshold">setTimeoutThreshold</a></li><li data-type='method'><a href="module-escrow.html#.timeoutThreshold">timeoutThreshold</a></li><li data-type='method'><a href="module-escrow.html#.verify">verify</a></li><li data-type='method'><a href="module-escrow.html#.verifyBatch">verifyBatch</a></li><li data-type='method'><a href="module-escrow.html#.verifyPlacement">verifyPlacement</a></li><li data-type='method'><a href="module-escrow.html#~addPlacementReturnValue">addPlacementReturnValue</a></li><li data-type='method'><a href="module-escrow.html#~createEscrowPlaceTransactions">createEscrowPlaceTransactions</a></li><li data-type='method'><a href="module-escrow.html#~normalizeScopeRequestId">normalizeScopeRequestId</a></li></ul></li><li><a href="module-idvRegistry.html">idvRegistry</a><ul class='methods'><li data-type='method'><a href="module-idvRegistry.html#.exists">exists</a></li><li data-type='method'><a href="module-idvRegistry.html#.get">get</a></li><li data-type='method'><a href="module-idvRegistry.html#.set">set</a></li><li data-type='method'><a href="module-idvRegistry.html#~assertNotEmpty">assertNotEmpty</a></li></ul></li><li><a href="module-ontology.html">ontology</a><ul class='methods'><li data-type='method'><a href="module-ontology.html#.add">add</a></li><li data-type='method'><a href="module-ontology.html#.deprecate">deprecate</a></li><li data-type='method'><a href="module-ontology.html#.deprecateById">deprecateById</a></li><li data-type='method'><a href="module-ontology.html#.getAll">getAll</a></li><li data-type='method'><a href="module-ontology.html#.getById">getById</a></li><li data-type='method'><a href="module-ontology.html#.getByTypeNameVersion">getByTypeNameVersion</a></li><li data-type='method'><a href="module-ontology.html#.getIdByTypeNameVersion">getIdByTypeNameVersion</a></li><li data-type='method'><a href="module-ontology.html#.parseExternalId">parseExternalId</a></li><li data-type='method'><a href="module-ontology.html#.parseExternalId">parseExternalId</a></li><li data-type='method'><a href="module-ontology.html#~assertNotEmpty">assertNotEmpty</a></li><li data-type='method'><a href="module-ontology.html#~mapCredentialItemRecord">mapCredentialItemRecord</a></li></ul></li><li><a href="module-pricing.html">pricing</a><ul class='methods'><li data-type='method'><a href="module-pricing.html#.deletePrice">deletePrice</a></li><li data-type='method'><a href="module-pricing.html#.getAllPrices">getAllPrices</a></li><li data-type='method'><a href="module-pricing.html#.getPrice">getPrice</a></li><li data-type='method'><a href="module-pricing.html#.setPrice">setPrice</a></li><li data-type='method'><a href="module-pricing.html#~checkPriceIsSet">checkPriceIsSet</a></li><li data-type='method'><a href="module-pricing.html#~mapCredentialItemPrice">mapCredentialItemPrice</a></li></ul></li><li><a href="module-support_asserts.html">support/asserts</a><ul class='methods'><li data-type='method'><a href="module-support_asserts.html#.assertAddress">assertAddress</a></li><li data-type='method'><a href="module-support_asserts.html#.assertAmount">assertAmount</a></li><li data-type='method'><a href="module-support_asserts.html#.assertCredentialItemPrice">assertCredentialItemPrice</a></li><li data-type='method'><a href="module-support_asserts.html#.assertCredentialItems">assertCredentialItems</a></li><li data-type='method'><a href="module-support_asserts.html#.assertCredentialItemType">assertCredentialItemType</a></li></ul></li><li><a href="module-support_errors.html">support/errors</a><ul class='methods'><li data-type='method'><a href="module-support_errors.html#~mapError">mapError</a></li></ul></li><li><a href="module-support_nonceManager.html">support/nonceManager</a><ul class='methods'><li data-type='method'><a href="module-support_nonceManager.html#.clearAccounts">clearAccounts</a></li><li data-type='method'><a href="module-support_nonceManager.html#.getAccount">getAccount</a></li><li data-type='method'><a href="module-support_nonceManager.html#.getNonceForAccount">getNonceForAccount</a></li><li data-type='method'><a href="module-support_nonceManager.html#~getTransactionCount">getTransactionCount</a></li><li data-type='method'><a href="module-support_nonceManager.html#~inspectTxPool">inspectTxPool</a></li></ul></li><li><a href="module-support_tx.html">support/tx</a><ul class='methods'><li data-type='method'><a href="module-support_tx.html#~assertCodeAtAddress">assertCodeAtAddress</a></li><li data-type='method'><a href="module-support_tx.html#~fallbackToAutodetectDeployedContract">fallbackToAutodetectDeployedContract</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#destructArray">destructArray</a></li><li><a href="global.html#getTransactionPoolStatus">getTransactionPoolStatus</a></li><li><a href="global.html#handleSendError">handleSendError</a></li><li><a href="global.html#searchTxPoolContentResult">searchTxPoolContentResult</a></li><li><a href="global.html#send">send</a></li><li><a href="global.html#sendChain">sendChain</a></li><li><a href="global.html#sendPlatformCoin">sendPlatformCoin</a></li><li><a href="global.html#sendRawTransaction">sendRawTransaction</a></li><li><a href="global.html#sendTransaction">sendTransaction</a></li><li><a href="global.html#signAndSend">signAndSend</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">idvRegistry</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description"><p>Functions to register and retrieve ID Validators in Identity.com</p></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="idv-registry.js.html">idv-registry.js</a>, <a href="idv-registry.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".exists"><span class="type-signature">(static) </span>exists<span class="signature">(idvAddress)</span><span class="type-signature"> &rarr; {Promise.&lt;bool>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="idv-registry.js.html">idv-registry.js</a>, <a href="idv-registry.js.html#line84">line 84</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Verifies whether an identity validator is registered.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>idvAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The identity validator address.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>A promise of identity validator status.</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;bool></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".get"><span class="type-signature">(static) </span>get<span class="signature">(idvAddress)</span><span class="type-signature"> &rarr; {Promise.&lt;{name: string, description: string}>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="idv-registry.js.html">idv-registry.js</a>, <a href="idv-registry.js.html#line68">line 68</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Returns the identity validator entry.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>idvAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The identity validator address.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>A promise of the identity validator details.</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;{name: string, description: string}></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".set"><span class="type-signature">(static) </span>set<span class="signature">(fromAddress, signTx, idvAddress, idvName, idvDescription, txOptions)</span><span class="type-signature"> &rarr; {Promise.&lt;{transactionHash: string}>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="idv-registry.js.html">idv-registry.js</a>, <a href="idv-registry.js.html#line46">line 46</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Adds a new identity validator record or updates the existing one.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fromAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The transaction sender address.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>signTx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Transaction signing function.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>idvAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The identity validator address.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>idvName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The identity validator name.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>idvDescription</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The identity validator description.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>txOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>transaction options.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>nonce</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The transaction sequence number.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>gas</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The gas value provided by the sender.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>gasPrice</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The gas price value provided by the sender in Wei.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>chainId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The network chain id according to EIP-155.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise of the transaction hash.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;{transactionHash: string}></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~assertNotEmpty"><span class="type-signature">(inner) </span>assertNotEmpty<span class="signature">(record)</span><span class="type-signature"> &rarr; {*}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="idv-registry.js.html">idv-registry.js</a>, <a href="idv-registry.js.html#line22">line 22</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>record</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">*</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Sep 25 2018 14:16:55 GMT+0200 (CEST) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+
+
+</body>
+</html>
