@@ -67,7 +67,7 @@ const _ = require('lodash');
 const tx = require('./support/tx');
 const sender = require('./support/sender');
 const { toCVC } = require('./token');
-const { CVC_DECIMALS, CONTRACT_CIVIC_TOKEN, CONTRACT_CIVIC_ESCROW } = require('./support/constants');
+const { CVC_DECIMALS, CONTRACT_TOKEN, CONTRACT_ESCROW } = require('./support/constants');
 const logger = require('./logger/index');
 const { assertAddress, assertAmount, assertCredentialItems } = require('./support/asserts');
 const ontology = require('./ontology');
@@ -83,11 +83,11 @@ const REFUND_GAS_LIMIT = 100000;
  * If the sourceAddress has already pre-approved a CVC transfer balance to the escrow contract greater than the
  * amount of the placement, then we can make the placement directly.
  *
- * If the sourceAddress has not pre-approved, then we need to make an approve transaction on the CivicToken contract.
+ * If the sourceAddress has not pre-approved, then we need to make an approve transaction on the CvcToken contract.
  * If the sourceAddress has pre-approved, but the amount is not sufficient, then we need to first drop the allowance
  * to zero (https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729) and then make an approve transaction.
  *
- * @param {object} contracts An object containing CivicEscrow &amp; CivicToken contracts
+ * @param {object} contracts An object containing CvcEscrow &amp; CvcToken contracts
  * @param {string} sourceAddress The address of the account making the escrow placement
  * @param {string} recipientAddress The recipientAddress of the escrow payment (once released)
  * @param {Array&lt;string>}  scopeRequestIds The scope request IDs to which the escrow payment refers
@@ -103,7 +103,7 @@ const createEscrowPlaceTransactions = (
   amount,
   credentialItems
 ) => {
-  const allowancePromise = contracts.CivicToken.allowance(sourceAddress, contracts.CivicEscrow.address);
+  const allowancePromise = contracts.CvcToken.allowance(sourceAddress, contracts.CvcEscrow.address);
 
   /**
    * @description Creates a set of CVC approve transactions to ensure the batch placements can be successfully made.
@@ -114,7 +114,7 @@ const createEscrowPlaceTransactions = (
    * If the current approved amount is zero, approve X. (one transaction)
    *
    * If the current approved amount is non-zero but less than X, then this function
-   * reduces the approved balance to zero and re-approves X CVC. (Civic ERC20 token
+   * reduces the approved balance to zero and re-approves X CVC.
    * contract does not allow topping up a non-zero approval balance.) (two transactions)
    *
    * If the current approved amount is greater than X, add nothing. (zero transactions)
@@ -125,7 +125,7 @@ const createEscrowPlaceTransactions = (
   const approveTransactions = allowance => {
     logger.debug('approveTransactions current allowance', {
       allowance,
-      contractAddress: contracts.CivicEscrow.address,
+      contractAddress: contracts.CvcEscrow.address,
       sourceAddress,
       scopeRequestIds
     });
@@ -135,24 +135,24 @@ const createEscrowPlaceTransactions = (
     if (allowance.eq(0)) {
       // fromAddress has not approved any CVC into the escrow contract. We need to send an approve transaction first
       approvalTransactions.push({
-        contract: CONTRACT_CIVIC_TOKEN,
+        contract: CONTRACT_TOKEN,
         method: 'approve',
-        args: [contracts.CivicEscrow.address, amount]
+        args: [contracts.CvcEscrow.address, amount]
       });
     } else if (allowance.lt(amount)) {
       // fromAddress has approved CVC to the escrow contract, but it is not sufficient for the escrow payment.
       // We need to top up the allowance.
-      // since the Civic ERC20 token contract does not allow topping up a non-zero approval balance,
+      // since the CVC ERC20 token contract does not allow topping up a non-zero approval balance,
       // this means we must first reduce the allowance to zero and then top up
       approvalTransactions.push({
-        contract: CONTRACT_CIVIC_TOKEN,
+        contract: CONTRACT_TOKEN,
         method: 'approve',
-        args: [contracts.CivicEscrow.address, 0]
+        args: [contracts.CvcEscrow.address, 0]
       });
       approvalTransactions.push({
-        contract: CONTRACT_CIVIC_TOKEN,
+        contract: CONTRACT_TOKEN,
         method: 'approve',
-        args: [contracts.CivicEscrow.address, amount]
+        args: [contracts.CvcEscrow.address, amount]
       });
     } // else allowance >= amount - we have enough for the batch escrow placements
 
@@ -166,7 +166,7 @@ const createEscrowPlaceTransactions = (
    */
   const placementTransactions = () => [
     {
-      contract: CONTRACT_CIVIC_ESCROW,
+      contract: CONTRACT_ESCROW,
       method: 'placeBatch',
       args: [recipientAddress, scopeRequestIds, amount, credentialItems]
     }
@@ -236,7 +236,8 @@ escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount,
 /**
  * @alias module:escrow.placeBatch
  * @memberOf escrow
- * @description Places CVC tokens into escrow smart contract. Allows to batch scope request IDs to reduce transaction costs.
+ * @description Places CVC tokens into escrow smart contract.
+ * Allows the batching of scope request IDs to reduce transaction costs.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
  * @param {string} idvAddress - The identity validator address.
@@ -248,7 +249,8 @@ escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount,
  * @param {number} [txOptions.gas] - The gas value provided by the sender.
  * @param {number} [txOptions.gasPrice] - The gas price value provided by the sender in Wei.
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
- * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for transaction receipt before raising an error.
+ * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for
+ * transaction receipt before raising an error.
  * @returns {Promise&lt;Array&lt;object>>} An promise of an array of objects
  * containing transaction hash (see tx.js module) and returnValue object with placementId.
  */
@@ -282,7 +284,7 @@ escrow.placeBatch = function(
   });
 
   return Promise.all([
-    tx.contractInstances(CONTRACT_CIVIC_TOKEN, CONTRACT_CIVIC_ESCROW),
+    tx.contractInstances(CONTRACT_TOKEN, CONTRACT_ESCROW),
     Promise.all(credentialItems.map(ontology.parseExternalId).map(args => ontology.getIdByTypeNameVersion(...args)))
   ])
     .then(([contracts, internalIds]) =>
@@ -331,7 +333,8 @@ escrow.release = function(fromAddress, signTx, idrAddress, idvAddress, scopeRequ
 /**
  * @alias module:escrow.releaseBatch
  * @memberOf escrow
- * @description Releases placed CVC tokens from escrow contract. Allows to batch scope request IDs to reduce transaction costs.
+ * @description Releases placed CVC tokens from escrow contract.
+ * Allows the batching of scope request IDs to reduce transaction costs.
  * Also allows partial release by providing the list of scope request IDs which should be kept in escrow.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
@@ -381,7 +384,7 @@ escrow.releaseBatch = function(
     .send({
       fromAddress: assertAddress(fromAddress),
       signTx,
-      contractName: 'CivicEscrow',
+      contractName: 'CvcEscrow',
       method: 'releaseBatch',
       params: [
         assertAddress(idrAddress),
@@ -424,7 +427,7 @@ escrow.verifyBatch = function(idrAddress, idvAddress, scopeRequestIds) {
   const normalizedIds = scopeRequestIds.map(normalizeScopeRequestId);
 
   return tx
-    .contractInstance(CONTRACT_CIVIC_ESCROW)
+    .contractInstance(CONTRACT_ESCROW)
     .then(
       logger.debugLogTap('Verifying escrow payment: ', {
         idrAddress,
@@ -443,13 +446,14 @@ escrow.verifyBatch = function(idrAddress, idvAddress, scopeRequestIds) {
 /**
  * @alias module:escrow.verifyPlacement
  * @memberOf escrow
- * @description Returns escrow placement details by placementId. This is read-only method and doesn't involve transaction mining.
+ * @description Returns escrow placement details by placementId.
+ * This is read-only method and doesn't involve transaction mining.
  * @param {string} placementId - The escrow placement ID.
  * @returns {PlacementDetails} - A promise of the escrow placement details.
  */
 escrow.verifyPlacement = function(placementId) {
   return tx
-    .contractInstance(CONTRACT_CIVIC_ESCROW)
+    .contractInstance(CONTRACT_ESCROW)
     .then(logger.debugLogTap('Verifying placement: ', { placementId }))
     .then(escrowContract => escrowContract.verifyPlacement(placementId));
 };
@@ -468,7 +472,8 @@ escrow.verifyPlacement = function(placementId) {
  * @param {number} [txOptions.gas] - The gas value provided by the sender.
  * @param {number} [txOptions.gasPrice] - The gas price value provided by the sender in Wei.
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
- * @returns {Promise&lt;object>} A promise of the transaction hash (see tx.js module) and returnValue object with placementId.
+ * @returns {Promise&lt;object>} A promise of the transaction hash (see tx.js module)
+ * and returnValue object with placementId.
  */
 escrow.refund = function(fromAddress, signTx, idrAddress, idvAddress, scopeRequestId, txOptions = {}) {
   return escrow.refundBatch(fromAddress, signTx, idrAddress, idvAddress, [scopeRequestId], txOptions);
@@ -477,7 +482,8 @@ escrow.refund = function(fromAddress, signTx, idrAddress, idvAddress, scopeReque
 /**
  * @alias module:escrow.refundBatch
  * @memberOf escrow
- * @description Refunds escrowed funds for batch placement. Allows to batch scope request IDs to reduce transaction costs.
+ * @description Refunds escrowed funds for batch placement.
+ * Allows the batching of scope request IDs to reduce transaction costs.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
  * @param {string} idrAddress - The identity requestor address.
@@ -507,7 +513,7 @@ escrow.refundBatch = function(fromAddress, signTx, idrAddress, idvAddress, scope
   return sender.send({
     fromAddress: assertAddress(fromAddress),
     signTx,
-    contractName: CONTRACT_CIVIC_ESCROW,
+    contractName: CONTRACT_ESCROW,
     method: 'refundBatch',
     params: [assertAddress(idrAddress), assertAddress(idvAddress), normalizedIds],
     txOptions: updatedTxOptions
@@ -533,7 +539,7 @@ escrow.setTimeoutThreshold = function(fromAddress, signTx, threshold) {
   return sender.send({
     fromAddress: assertAddress(fromAddress),
     signTx,
-    contractName: CONTRACT_CIVIC_ESCROW,
+    contractName: CONTRACT_ESCROW,
     method: 'setTimeoutThreshold',
     params: [threshold]
   });
@@ -546,13 +552,14 @@ escrow.setTimeoutThreshold = function(fromAddress, signTx, threshold) {
  * @return {Promise&lt;number>} A promise of the timeout threshold value.
  */
 escrow.timeoutThreshold = function() {
-  return tx.contractInstance(CONTRACT_CIVIC_ESCROW).then(escrowContract => escrowContract.timeoutThreshold());
+  return tx.contractInstance(CONTRACT_ESCROW).then(escrowContract => escrowContract.timeoutThreshold());
 };
 
 /**
  * @alias module:escrow.setFeeRate
  * @memberOf escrow
- * @description Updates marketplace platform escrow fee rate  i.e. the percentage of escrow placement amount which is transferred
+ * @description Updates marketplace platform escrow fee rate
+ * i.e. the percentage of escrow placement amount which is transferred
  * to platform administrator address upon each placement release. Admin only
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
@@ -567,7 +574,7 @@ escrow.setFeeRate = function(fromAddress, signTx, feeRate) {
   return sender.send({
     fromAddress: assertAddress(fromAddress),
     signTx,
-    contractName: CONTRACT_CIVIC_ESCROW,
+    contractName: CONTRACT_ESCROW,
     method: 'setFeeRate',
     params: [feeRate]
   });
@@ -585,13 +592,13 @@ escrow.setFeeRate = function(fromAddress, signTx, feeRate) {
  */
 escrow.calculatePlacementId = function(idrAddress, idvAddress, scopeRequestIds) {
   return tx
-    .contractInstance(CONTRACT_CIVIC_ESCROW)
+    .contractInstance(CONTRACT_ESCROW)
     .then(logger.debugLogTap('Calculating placementId: ', { idrAddress, idvAddress, scopeRequestIds }))
     .then(escrowContract => escrowContract.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds));
 };
 
 function toPaymentState(number) {
-  // this array should be kept in sync with CivicEscrowInterface.sol
+  // this array should be kept in sync with CvcEscrowInterface.sol
   return ['Empty', 'Placed', 'Released', 'Canceled'][number];
 }
 
@@ -640,7 +647,7 @@ function normalizeScopeRequestId(scopeRequestId) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Sep 25 2018 14:16:55 GMT+0200 (CEST) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Sep 25 2018 18:19:06 GMT+0200 (CEST) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
