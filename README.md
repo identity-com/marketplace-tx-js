@@ -74,10 +74,14 @@ const marketplaceTx = new MarketplaceTx(web3, config, logger);
 
 ### Contracts
 
-Contract artifacts (JSON files produced by truffle containing contract name, ABI, bytecode (optionally), addresses on specified networks) should be kept under ```./marketplace-tx/contracts/stage/``` directory for both ```dev``` and ```test``` stages. 
-For ```prod``` we are using ```./marketplace-tx/contracts/v3``` folder for artifacts and ```config.contracts.addresses``` for addresses on rinkeby.
+MarketplaceTx requires contract artifacts - JSON files produced by [https://github.com/identity-com/smart-contracts](Marketplace Smart Contracts library) containing contract name, ABI, addresses on specified networks. 
+You can specify the path to to the artifacts folder by passing it to the config upon the initialisation:
 
-If you are using this lib as a dependency, you still need to create ```./marketplace-tx/contracts/stage/``` folder (for dev/test) and download artifacts from AWS S3 bucket.
+```js
+const config = { contracts: { dir: 'contracts/' } };
+const marketplaceTx = new MarketplaceTx(web3, config);
+```
+
 
 ## Usage
 
