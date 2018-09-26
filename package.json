@@ -21,7 +21,7 @@
     "url": "git+https://github.com/identity-com/marketplace-tx-js.git"
   },
   "author": "",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/identity-com/marketplace-tx-js/issues"
   },
