@@ -97,6 +97,27 @@ const fallbackToAutodetectDeployedContract = (contract, contractName) =>
     .then(assertCodeAtAddress);
 
 /**
+ * Returns the contract artifact
+ * @param {string} contractName - The contact name.
+ * @returns {Promise<object>} The contract artifact.
+ */
+// eslint-disable-next-line consistent-return
+const getContractArtifact = contractName => {
+  if (config.contracts.url) {
+    // For frontend apps you can pass the url of the contracts
+    // eslint-disable-next-line no-undef
+    return fetch(`${config.contracts.url}/${contractName}.json`)
+      .then(res => res.json())
+      .then(data => Promise.resolve(data))
+      .catch(err => Promise.reject(err));
+  } else if (config.contracts.dir) {
+    // For backend servers you can pass the path of the contracts
+    // eslint-disable-next-line import/no-dynamic-require, global-require
+    return Promise.resolve(require(`./${path.join(config.contracts.dir, `${contractName}.json`)}`));
+  }
+};
+
+/**
  * Returns the contract instance by name.
  * @type {Function}
  */
@@ -106,26 +127,27 @@ tx.contractInstance = _.memoize(contractName => {
       throw new Error(`Invalid contract name "${contractName}"`);
     }
     // Load contract artifact file.
-    // eslint-disable-next-line import/no-dynamic-require, global-require
-    const contractArtifact = require(`./${path.join(config.contracts.dir, `${contractName}.json`)}`);
-    // Create contract object.
-    const contract = truffleContract(contractArtifact);
-    contract.setProvider(tx.web3.currentProvider);
+    return getContractArtifact(contractName).then(contractArtifact => {
+      // Create contract object.
+      const contract = truffleContract(contractArtifact);
+      contract.setProvider(tx.web3.currentProvider);
 
-    if (_.has(config, ['contracts', 'addresses', contractName])) {
-      const contractAddress = config.contracts.addresses[contractName];
-      try {
-        return contract.at(contractAddress).then(assertCodeAtAddress);
-      } catch (e) {
-        logger.debug(
-          `Contract '${contractName}' could not be found at configured '${contractAddress}'. Falling back to autodetect`
-        );
+      if (_.has(config, ['contracts', 'addresses', contractName])) {
+        const contractAddress = config.contracts.addresses[contractName];
+        try {
+          return contract.at(contractAddress).then(assertCodeAtAddress);
+        } catch (e) {
+          logger.debug(
+            `Contract '${contractName}' could not be found at configured '${contractAddress}'. 
+            Falling back to autodetect`
+          );
+          return fallbackToAutodetectDeployedContract(contract, contractName);
+        }
+      } else {
+        logger.debug(`Address not configured for '${contractName}' contract. Using autodetect...`);
         return fallbackToAutodetectDeployedContract(contract, contractName);
       }
-    } else {
-      logger.debug(`Address not configured for '${contractName}' contract. Using autodetect...`);
-      return fallbackToAutodetectDeployedContract(contract, contractName);
-    }
+    });
   } catch (error) {
     logger.error(`Error loading contract ${contractName}`, error);
     return Promise.reject(new CvcError(`Error loading contract: ${contractName}`, error));
@@ -146,7 +168,6 @@ tx.contractInstance = _.memoize(contractName => {
  */
 tx.contractInstances = function(...contractNames) {
   const contractInstancePromises = contractNames.map(tx.contractInstance);
-
   return Promise.all(contractInstancePromises).then(contractInstances => _.zipObject(contractNames, contractInstances));
 };
 

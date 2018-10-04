@@ -57,7 +57,7 @@ function mapError(error) {
 
 module.exports = {
   mapError,
-  CvcError: CvcError,
+  CvcError,
   InvalidNonceError,
   FailedTxChainError,
   NotDeployedError,
