@@ -3,13 +3,16 @@ require('longjohn');
 const chai = require('chai');
 const sandbox = require('sinon').createSandbox();
 const nonce = require('../src/support/nonce');
-const tx = require('../src/support/tx');
+const fetchMock = require('fetch-mock');
+const proxyquire = require('proxyquire');
 
 const { expect } = chai;
 chai.use(require('chai-as-promised'));
 
 describe('tx.js', () => {
   describe('when createTx throws', () => {
+    // eslint-disable-next-line global-require
+    const tx = require('../src/support/tx');
     let releaseNonceSpy;
     beforeEach('stub', () => {
       const getDataApplyStub = sandbox.stub().throws('Error', 'Invalid number of arguments to Solidity function');
@@ -46,6 +49,8 @@ describe('tx.js', () => {
   });
 
   describe('waitForMine', () => {
+    // eslint-disable-next-line global-require
+    const tx = require('../src/support/tx');
     before('Mining never resolves to a tx receipt', () => {
       sandbox.stub(tx, 'getTransactionReceipt').resolves(null);
     });
@@ -58,5 +63,62 @@ describe('tx.js', () => {
       expect(tx.waitForMine(Promise.resolve({ transactionHash: '0x' }), 1)).to.be.rejectedWith(
         /getTransactionReceiptMined timeout/
       )).timeout(4000);
+  });
+
+  describe('When we pass contract.url to contractInstance', () => {
+    const tx = proxyquire('../src/support/tx', {
+      '../../config/index': () => ({
+        contracts: { url: './contracts' }
+      }),
+      'truffle-contract': () => ({
+        setProvider: () => {},
+        deployed: () => ({
+          catch: () => ({
+            then: () => Promise.resolve({ foo: 'bar' })
+          })
+        })
+      })
+    });
+    before('stub', () => {
+      tx.web3 = sandbox.stub().returns({});
+      fetchMock.mock('./contracts/CvcEscrow.json', { contractName: 'CvcEscrow' });
+    });
+
+    after(() => {
+      sandbox.restore();
+    });
+
+    it('should fetch the contract', async () => {
+      const result = await tx.contractInstance('CvcEscrow');
+      expect(result).to.deep.equal({ foo: 'bar' });
+    });
+  });
+
+  describe('When we pass contract.dir to contractInstance', () => {
+    const tx = proxyquire('../src/support/tx', {
+      '../../config/index': () => ({
+        contracts: { dir: '../../test/assets/contracts' }
+      }),
+      'truffle-contract': () => ({
+        setProvider: () => {},
+        deployed: () => ({
+          catch: () => ({
+            then: () => Promise.resolve({ foo: 'bar' })
+          })
+        })
+      })
+    });
+    before('stub', () => {
+      tx.web3 = sandbox.stub().returns({});
+    });
+
+    after(() => {
+      sandbox.restore();
+    });
+
+    it('should fetch the contract', async () => {
+      const result = await tx.contractInstance('mockContract');
+      expect(result).to.deep.equal({ foo: 'bar' });
+    });
   });
 });
