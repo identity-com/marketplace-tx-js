@@ -22,30 +22,13 @@ We use the standard Identity.com terms for roles on the network:
 
 - __Credential Item External ID__:  The External ID consists of `Type, Name and Version`, using dash as a separator, e.g. `credential-ProofOfIdentity-v1.0`.
 
-### Testing
-
-Run all tests locally with:
-
-```
-npm install
-npm run check
-```
-
-This will run unit tests, integration tests, coverage checks and the linter.
-
-Note - the integration tests use [ganache-cli](https://github.com/trufflesuite/ganache-cli) and require docker.
-
-If you get "Invalid nonce values" when running the tests, ensure your ganache docker container and volume
-were shut down and deleted correctly after the tests ran.
-
-To run the integration tests without docker, start up your own blockchain node at localhost:8545 and
-run `npm run test-blockchain`.
-
 ### Installing 
 
 For development, fetch the library from github: [https://github.com/identity-com/marketplace-tx-js](https://github.com/identity-com/marketplace-tx-js)
 
 The library is not yet listed on npmjs.org.
+
+Integrate with your application using:
 
 ```js
 const MarketplaceTx = require('marketplace-tx-js');
