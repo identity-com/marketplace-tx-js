@@ -1,0 +1,88 @@
+version: 2
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - build
+      - integration-test:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+              - develop
+              - master
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.9
+      - image: trufflesuite/ganache-cli
+        command: [ganache, -m, 'drum muscle maximum umbrella night initial prevent auction pink old fault media', -h, '0.0.0.0', -l, '7992181', -g, '1000000000', -e, '1000']
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
+
+      - run:
+          command: |
+            npm install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
+
+      - run: npm run check-ci
+
+  integration-test:
+    # use machine rather than docker as the tests use docker-compose (https://circleci.com/docs/2.0/docker-compose/)
+    machine: true
+
+    # working directory for all tasks is the backend folder
+    working_directory: ~/repo
+
+    steps:
+      # checkout the repo into the root folder (required because working_directory is ~/repo/backend)
+      - checkout:
+          path: ~/repo
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
+
+      # set node version to 8.9.0. This is more complicated than it needs to be
+      # because each 'run' script runs in its own shell. If we switch to docker we can remove this
+      # see https://discuss.circleci.com/t/how-to-change-node-version-in-circleci-2-0/17455/4
+      - run:
+          name: Install node@8.9.0
+          command: |
+            set +e
+            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+            export NVM_DIR="/opt/circleci/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install v8.9.0
+            nvm alias default v8.9.0
+            # Each step uses the same `$BASH_ENV`, so need to modify it
+            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+
+      - run: npm install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
+
+      - run:
+          name: Pull latest docker images
+          command: docker-compose -f test/integration/docker/docker-compose.yml pull
+      - run: npm run integration-test

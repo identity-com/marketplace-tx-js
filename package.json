@@ -7,14 +7,21 @@
     "test": "test"
   },
   "scripts": {
-    "ci": "npm-run-all test-with-coverage coverage lint",
+    "check-ci": "npm-run-all test-with-coverage build-integration-test test-blockchain-with-coverage coverage lint",
+    "check": "npm-run-all test-with-coverage integration-test coverage lint",
     "eslint": "eslint --max-warnings=0 src test",
     "lint-autofix": "eslint --fix src test",
     "coverage": "cross-env FORCE_COLOR=1 nyc report && nyc check-coverage",
     "lint": "npm run eslint",
     "test": "cross-env NODE_ENV=test mocha test/*",
-    "test-with-coverage": "cross-env NODE_ENV=test nyc --reporter=none mocha test/*",
-    "doc": "jsdoc -r -c .jsdoc.json -d doc"
+    "test-with-coverage": "cross-env NODE_ENV=test nyc --reporter=none mocha test/*.js",
+    "doc": "jsdoc -r -c .jsdoc.json -d doc",
+    "build-integration-test": "cd node_modules/identity-com-smart-contracts && npm i && npm run build && cp artifacts/deployed/*.json ../../contracts",
+    "test-blockchain": "cross-env LOCAL=true NODE_ENV=test CHAIN_ID=15 ETH_NODE_URL='http://localhost:8545' mocha test/integration --timeout 120000",
+    "test-blockchain-with-coverage": "cross-env LOCAL=true NODE_ENV=test ETH_NODE_URL='http://localhost:8545' nyc --reporter=none mocha test/integration --timeout 10000",
+    "teardown-blockchain": "docker-compose -f test/integration/docker/docker-compose.yml down -v",
+    "preintegration-test": "docker-compose -f test/integration/docker/docker-compose.yml up -d > geth.log && npm run build-integration-test",
+    "integration-test": "npm-run-all test-blockchain-with-coverage teardown-blockchain --continue-on-error"
   },
   "repository": {
     "type": "git",
@@ -34,6 +41,7 @@
     "js-cache": "^1.0.2",
     "lodash": "^4.17.5",
     "make-error-cause": "^2.0.0",
+    "node-fetch": "^2.2.0",
     "serialize-error": "^2.1.0",
     "truffle-contract": "^3.0.4",
     "util.promisify": "^1.0.0",
@@ -43,6 +51,7 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
     "cross-env": "^5.1.3",
     "docdash": "^1.0.0",
     "eslint": "^4.18.2",
@@ -51,20 +60,23 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-named-unassigned-functions": "0.0.2",
     "eslint-plugin-prettier": "^2.5.0",
+    "fetch-mock": "^7.0.7",
+    "identity-com-smart-contracts": "github:identity-com/smart-contracts",
     "jsdoc": "3.5.5",
     "longjohn": "^0.2.12",
     "mocha": "^4.1.0",
     "npm-run-all": "^4.1.3",
     "nyc": "^11.4.1",
     "prettier": "1.10.2",
+    "proxyquire": "^2.1.0",
     "sinon": "^6.0.1",
     "web3-fake-provider": "^0.1.0"
   },
   "nyc": {
-    "lines": 55,
-    "statements": 50,
-    "functions": 29,
-    "branches": 40,
+    "lines": 80,
+    "statements": 80,
+    "functions": 75,
+    "branches": 60,
     "exclude": [
       "test/*"
     ]
