@@ -28,6 +28,8 @@ For development, fetch the library from github: [https://github.com/identity-com
 
 The library is not yet listed on npmjs.org.
 
+Integrate with your application using:
+
 ```js
 const MarketplaceTx = require('marketplace-tx-js');
 ```
@@ -37,9 +39,9 @@ const MarketplaceTx = require('marketplace-tx-js');
 MarketplaceTx is currently *not* compatible with Infura, as it requires access to the `txpool`
 Ethereum RPC API for nonce management. 
 
-### Asyncronous calls
+### Asynchronous calls
 
-Library returns `Promise` on any async call. Use `async/await` or `.then().catch()` according to your environment.  
+The library returns a `Promise` on any async call. Use `async/await` or `.then().catch()` according to your environment.  
 
 ### Initialising
 

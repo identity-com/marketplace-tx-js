@@ -15,9 +15,5 @@ logs
 coverage
 shippable
 
-# config files are encrypted - do not include decrypted versions
-/marketplace-tx/config/*.json
-/encryption-key
-
 # Shared artifacts
-/contracts/stage/*.json
+/contracts/**/*.json
