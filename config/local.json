@@ -1,6 +1,6 @@
 {
   "contracts": {
-    "dir": "../../contracts"
+    "dir": "../../contracts/stage"
   },
   "txSigningTimeout": 100
 }
