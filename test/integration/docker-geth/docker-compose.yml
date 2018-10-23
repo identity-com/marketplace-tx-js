@@ -1,0 +1,22 @@
+version: "2.1"
+
+services:
+  # starts a pre-initialised geth node with several prefunded addresses
+  geth:
+    image: civicteam/geth-privatenet-poa:stable
+    ports:
+      - 8545:8545
+    healthcheck:
+      # the node is considered healthy once it is possible to attach to it via HTTP
+      test: geth attach http://localhost:8545 --exec "true"
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
+  # bring up ready to start all services and wait until they are responding
+  ready:
+    image: tianon/true
+    depends_on:
+      geth:
+        condition: service_healthy
+
