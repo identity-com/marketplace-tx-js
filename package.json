@@ -8,7 +8,7 @@
   },
   "scripts": {
     "check-ci": "npm-run-all test-with-coverage build-integration-test test-blockchain-with-coverage coverage lint",
-    "check": "npm-run-all test-with-coverage integration-test coverage lint",
+    "check": "npm-run-all test-with-coverage integration-test-ganache coverage lint",
     "eslint": "eslint --max-warnings=0 src test",
     "lint-autofix": "eslint --fix src test",
     "coverage": "cross-env FORCE_COLOR=1 nyc report && nyc check-coverage",
@@ -17,11 +17,16 @@
     "test-with-coverage": "cross-env NODE_ENV=test nyc --reporter=none mocha test/*.js",
     "doc": "jsdoc -r -c .jsdoc.json -d doc",
     "build-integration-test": "cd node_modules/identity-com-smart-contracts && npm i && npm run build && cp artifacts/deployed/*.json ../../contracts",
-    "test-blockchain": "cross-env LOCAL=true NODE_ENV=test CHAIN_ID=15 ETH_NODE_URL='http://localhost:8545' mocha test/integration --timeout 120000",
+    "test-blockchain": "cross-env LOCAL=true NODE_ENV=test ETH_NODE_URL='http://localhost:8545' mocha test/integration --timeout 120000",
     "test-blockchain-with-coverage": "cross-env LOCAL=true NODE_ENV=test ETH_NODE_URL='http://localhost:8545' nyc --reporter=none mocha test/integration --timeout 10000",
-    "teardown-blockchain": "docker-compose -f test/integration/docker/docker-compose.yml down -v",
-    "preintegration-test": "docker-compose -f test/integration/docker/docker-compose.yml up -d > geth.log && npm run build-integration-test",
-    "integration-test": "npm-run-all test-blockchain-with-coverage teardown-blockchain --continue-on-error"
+    "ganache-up": "docker-compose -f test/integration/docker-ganache/docker-compose.yml up -d > ganache.log",
+    "ganache-down": "docker-compose -f test/integration/docker-ganache/docker-compose.yml down -v",
+    "geth-up": "docker-compose -f test/integration/docker-geth/docker-compose.yml up -d > geth.log ",
+    "geth-down": "docker-compose -f test/integration/docker-geth/docker-compose.yml down -v",
+    "preintegration-test-ganache": "npm-run-all ganache-up build-integration-test",
+    "integration-test-ganache": "npm-run-all test-blockchain-with-coverage ganache-down --continue-on-error",
+    "preintegration-test-geth": "npm-run-all geth-up build-integration-test",
+    "integration-test-geth": "npm-run-all test-blockchain geth-down --continue-on-error"
   },
   "repository": {
     "type": "git",
