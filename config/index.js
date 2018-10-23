@@ -40,7 +40,7 @@ const configure = passedInConfig => {
   return _.merge(
     {
       contracts: {
-        dir: '../../contracts/stage'
+        dir: '../../build/contracts'
       },
       preloadContracts: true, // by default, check that the contracts exist on startup
       gasPrice: 1e9, // 1 gwei
