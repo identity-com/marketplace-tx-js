@@ -1,6 +1,6 @@
 {
   "contracts": {
-    "dir": "contracts/stage"
+    "dir": "../../contracts/stage"
   },
   "gasPrice": 6e9,
   "txMiningTimeout": 300

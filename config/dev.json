@@ -1,5 +1,5 @@
 {
   "contracts": {
-    "dir": "contracts/stage"
+    "dir": "../../contracts/stage"
   }
 }
