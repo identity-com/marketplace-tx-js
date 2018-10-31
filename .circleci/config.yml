@@ -101,4 +101,4 @@ jobs:
       - image: circleci/node:8.9
 
     steps:
-      - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-test" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/dev?circle-token=${CIRCLE_TOKEN}"
+      - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-test" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/master?circle-token=${CIRCLE_TOKEN}"
