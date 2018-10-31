@@ -36,10 +36,10 @@ workflows:
           context: Development
           requires:
             - build
-#          filters:
-#            branches:
-#              only:
-#                - master
+          filters:
+            branches:
+              only:
+                - master
       - build-marketplace-tx-server-test:
           context: Development
           requires:
