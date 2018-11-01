@@ -38,16 +38,14 @@ workflows:
             - build
           filters:
             branches:
-              only:
-                - master
+              only: master
       - build-marketplace-tx-server-test:
           context: Development
           requires:
             - build
           filters:
             branches:
-              only:
-                - release
+              only: release
 
   integration-test:
     jobs:
