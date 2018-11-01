@@ -334,7 +334,7 @@ escrow.releaseBatch = function(
     scopeRequestIdsToKeep,
     normalizedScopeRequestIdsToRelease,
     normalizedScopeRequestIdsToKeep,
-    updatedTxOptions
+    txOptions: updatedTxOptions
   });
 
   return sender
@@ -349,7 +349,7 @@ escrow.releaseBatch = function(
         normalizedScopeRequestIdsToRelease,
         normalizedScopeRequestIdsToKeep
       ],
-      updatedTxOptions
+      txOptions: updatedTxOptions
     })
     .then(receipt => addPlacementReturnValue(receipt, idrAddress, idvAddress, normalizedScopeRequestIdsToKeep));
 };

@@ -31,7 +31,7 @@ The library is not yet listed on npmjs.org.
 Integrate with your application using:
 
 ```js
-const MarketplaceTx = require('marketplace-tx-js');
+const MarketplaceTx = require('marketplace-tx');
 ```
 
 ### Use with Infura
@@ -48,7 +48,7 @@ The library returns a `Promise` on any async call. Use `async/await` or `.then()
 Before using the library, you should:
 
 ```js
-const MarketplaceTx = require('marketplace-tx-js');
+const MarketplaceTx = require('marketplace-tx');
 const marketplaceTx = new MarketplaceTx(web3);
 ```
 
