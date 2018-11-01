@@ -50,7 +50,7 @@ const nonceManager = require('./nonce');
 const { CONTRACTS } = require('./constants');
 const logger = require('../logger/index');
 const { mapError, CvcError, NotDeployedError, NoNetworkInContractError } = require('./errors');
-const config = require('../../config/index')();
+const config = require('../config/index')();
 
 // Default chainID is 0, otherwise take it from the environment variables.
 const TX_CHAIN_ID = parseInt(process.env.CHAIN_ID, 10) || 0;

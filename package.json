@@ -9,8 +9,8 @@
   "scripts": {
     "check-ci": "npm-run-all test-with-coverage build-integration-test test-blockchain-with-coverage coverage lint",
     "check": "npm-run-all test-with-coverage integration-test-ganache coverage lint",
-    "eslint": "eslint --max-warnings=0 src test config",
-    "lint-autofix": "eslint --fix src test config",
+    "eslint": "eslint --max-warnings=0 src test",
+    "lint-autofix": "eslint --fix src test",
     "coverage": "cross-env FORCE_COLOR=1 nyc report && nyc check-coverage",
     "lint": "npm run eslint",
     "test": "cross-env NODE_ENV=test mocha test/*",
