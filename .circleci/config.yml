@@ -1,10 +1,52 @@
-version: 2
+defaults:
+  - &cache_restore
+    restore_cache:
+      keys:
+        - v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json" }}
+  - &cache_save
+    save_cache:
+      paths:
+        - node_modules
+      key: v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json" }}
+  - &install_node
+    # set node version to 8.9.0 to support the get-latest-contracts script.
+    # This is more complicated than it needs to be
+    # because each 'run' script runs in its own shell. If we switch to docker we can remove this
+    # see https://discuss.circleci.com/t/how-to-change-node-version-in-circleci-2-0/17455/4
+    run:
+      name: Install node@8.9.0
+      command: |
+        set +e
+        curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install v8.9.0
+        nvm alias default v8.9.0
+        # Each step uses the same `$BASH_ENV`, so need to modify it
+        echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+        echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
 
+version: 2
 workflows:
   version: 2
   build-and-test:
     jobs:
       - build
+      - build-marketplace-tx-server-latest:
+          context: Development
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+      - build-marketplace-tx-server-test:
+          context: Development
+          requires:
+            - build
+          filters:
+            branches:
+              only: release
+
   integration-test:
     jobs:
       - integration-test-on-geth
@@ -20,21 +62,11 @@ jobs:
 
     steps:
       - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
-
+      - *cache_restore
       - run:
           command: |
             npm install
-
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
-
+      - *cache_save
       - run: npm run check-ci
 
   integration-test-on-geth:
@@ -45,37 +77,26 @@ jobs:
 
     steps:
     - checkout
-
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
-
-    # set node version to 8.9.0. This is more complicated than it needs to be
-    # because each 'run' script runs in its own shell. If we switch to docker we can remove this
-    # see https://discuss.circleci.com/t/how-to-change-node-version-in-circleci-2-0/17455/4
-    - run:
-        name: Install node@8.9.0
-        command: |
-          set +e
-          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
-          export NVM_DIR="/opt/circleci/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install v8.9.0
-          nvm alias default v8.9.0
-          # Each step uses the same `$BASH_ENV`, so need to modify it
-          echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-          echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-
+    - *cache_restore
+    - *install_node
     - run: npm install
-
-    - save_cache:
-        paths:
-        - node_modules
-        key: v1-dependencies-{{ checksum "package.json" }}-{{checksum "package-lock.json"}}
-
+    - *cache_save
     - run:
         name: Pull latest docker images
         command: |
           docker-compose -f test/integration/docker-geth/docker-compose.yml pull
     - run: npm run integration-test-geth
+
+  build-marketplace-tx-server-latest:
+    docker:
+      - image: circleci/node:8.9
+
+    steps:
+      - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-latest" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/dev?circle-token=${CIRCLE_TOKEN}"
+
+  build-marketplace-tx-server-test:
+    docker:
+      - image: circleci/node:8.9
+
+    steps:
+      - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-test" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/master?circle-token=${CIRCLE_TOKEN}"
