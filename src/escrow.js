@@ -25,7 +25,7 @@ const tx = require('./support/tx');
 const sender = require('./support/sender');
 const { toCVC } = require('./token');
 const { CVC_DECIMALS, CONTRACT_TOKEN, CONTRACT_ESCROW } = require('./support/constants');
-const logger = require('./logger/index');
+const logger = require('./logger');
 const { assertAddress, assertAmount, assertCredentialItems } = require('./support/asserts');
 const ontology = require('./ontology');
 
