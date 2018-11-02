@@ -20,6 +20,7 @@ const configure = passedInConfig =>
     passedInConfig
   );
 
+// Config is stored as a singleton so you can pass in custom values only once in your app
 let singletonConfigObject = null;
 
 module.exports = (passedInConfig = {}) => {
