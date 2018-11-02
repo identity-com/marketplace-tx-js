@@ -6,7 +6,7 @@
  * */
 
 const _ = require('lodash');
-const logger = require('../logger/index');
+const logger = require('../logger');
 const { mapError } = require('./errors');
 
 const nonceManager = {};

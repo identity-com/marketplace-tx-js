@@ -3,7 +3,7 @@ module.exports = coin;
 
 const tx = require('./tx');
 const sender = require('./sender');
-const logger = require('../logger/index');
+const logger = require('../logger');
 
 /**
  * Returns platform coin balance for given address.
