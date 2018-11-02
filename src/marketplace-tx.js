@@ -3,6 +3,7 @@ const web3admin = require('web3admin');
 function MarketplaceTx(web3, config, logger) {
   /* eslint-disable global-require */
   // ensure this is called before requiring the submodules
+  // as we store config in singleton variable and the next config requires will ignore custom values
   const resolvedConfig = require('./config/index')(config);
 
   require('./logger/setup')(logger);
