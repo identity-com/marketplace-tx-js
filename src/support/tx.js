@@ -48,9 +48,9 @@ const _ = require('lodash');
 
 const nonceManager = require('./nonce');
 const { CONTRACTS } = require('./constants');
-const logger = require('../logger/index');
+const logger = require('../logger');
 const { mapError, CvcError, NotDeployedError, NoNetworkInContractError } = require('./errors');
-const config = require('../../config/index')();
+const config = require('../config')();
 
 // Default chainID is 0, otherwise take it from the environment variables.
 const TX_CHAIN_ID = parseInt(process.env.CHAIN_ID, 10) || 0;
@@ -113,7 +113,7 @@ const getContractArtifact = contractName => {
   } else if (config.contracts.dir) {
     // For backend servers you can pass the path of the contracts
     // eslint-disable-next-line import/no-dynamic-require, global-require
-    return Promise.resolve(require(`./${path.join(config.contracts.dir, `${contractName}.json`)}`));
+    return Promise.resolve(require(path.join(config.contracts.dir, `${contractName}.json`)));
   }
 };
 

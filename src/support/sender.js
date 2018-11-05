@@ -14,9 +14,9 @@ const _ = require('lodash');
 const { timeout } = require('./util');
 const nonceManager = require('./nonce');
 const tx = require('./tx');
-const logger = require('../logger/index');
+const logger = require('../logger');
 const { mapError, InvalidNonceError, FailedTxChainError, SignerSenderAddressMismatchError } = require('./errors');
-const config = require('../../config/index')();
+const config = require('../config')();
 
 // Defaults:
 // Wait for mine timeout value between chained transactions (in seconds)

@@ -1,6 +1,0 @@
-{
-  "contracts": {
-    "dir": "../../contracts"
-  },
-  "txSigningTimeout": 100
-}

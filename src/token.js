@@ -4,7 +4,7 @@ module.exports = token;
 const Bn = require('bignumber.js');
 const tx = require('./support/tx');
 const sender = require('./support/sender');
-const logger = require('./logger/index');
+const logger = require('./logger');
 const { CONTRACT_TOKEN, ONE_CVC } = require('./support/constants');
 
 token.getBalances = function(users) {

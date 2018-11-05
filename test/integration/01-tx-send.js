@@ -8,7 +8,6 @@ chai.use(require('chai-bignumber'));
 const Web3 = require('web3');
 const sinon = require('sinon');
 const MarketplaceTx = require('../../src/marketplace-tx');
-const config = require('../../config')();
 const logger = require('../../src/logger');
 const users = require('./users');
 const signTx = require('./signtx');
@@ -19,6 +18,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 const ERR_NONCE_TOO_LOW = 1;
 const ERR_UNDERPRICED_REPLACEMENT = 2;
+const TX_SIGNING_TIMEOUT = process.env.TX_SIGNING_TIMEOUT || 100;
 
 // initialise the marketplace-tx library and set the web3 connection
 const marketplacetx = new MarketplaceTx(web3);
@@ -139,7 +139,7 @@ describe('Sending transactions', () => {
 
       it('should fail when signing request times out', async () => {
         const amount = 100;
-        const txSigningDelay = config.txSigningTimeout + 10; // set delay above the allowed timeout
+        const txSigningDelay = TX_SIGNING_TIMEOUT + 10; // set delay above the allowed timeout
         const sendPromise = marketplacetx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(null, txSigningDelay),
@@ -152,7 +152,7 @@ describe('Sending transactions', () => {
 
       it('should succeed when tx is signed on time', () => {
         const amount = 100;
-        const txSigningDelay = config.txSigningTimeout - 50; // set delay below the allowed timeout
+        const txSigningDelay = TX_SIGNING_TIMEOUT - 50; // set delay below the allowed timeout
         const sendPromise = marketplacetx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(null, txSigningDelay),
@@ -329,7 +329,7 @@ describe('Sending transactions', () => {
 
       it('should succeed when transaction batch is signed on time', async () => {
         const amount = 10;
-        const txSigningDelay = config.txSigningTimeout - 10; // set delay below the allowed timeout
+        const txSigningDelay = TX_SIGNING_TIMEOUT - 10; // set delay below the allowed timeout
         const sendPromise = marketplacetx.sender.sendChain({
           fromAddress: address1,
           signTx: getSignBatchTx(null, null, txSigningDelay),
@@ -343,7 +343,7 @@ describe('Sending transactions', () => {
 
       it('should fail when transaction batch signing request times out', async () => {
         const amount = 10;
-        const txSigningDelay = config.txSigningTimeout + 10; // set delay above the allowed timeout
+        const txSigningDelay = TX_SIGNING_TIMEOUT + 10; // set delay above the allowed timeout
         const sendPromise = marketplacetx.sender.sendChain({
           fromAddress: address1,
           signTx: getSignBatchTx(null, null, txSigningDelay),

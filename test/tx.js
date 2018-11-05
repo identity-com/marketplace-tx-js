@@ -67,7 +67,7 @@ describe('tx.js', () => {
 
   describe('When we pass contract.url to contractInstance', () => {
     const tx = proxyquire('../src/support/tx', {
-      '../../config/index': () => ({
+      '../config': () => ({
         contracts: { url: './contracts' }
       }),
       'truffle-contract': () => ({
@@ -96,7 +96,7 @@ describe('tx.js', () => {
 
   describe('When we pass contract.dir to contractInstance', () => {
     const tx = proxyquire('../src/support/tx', {
-      '../../config/index': () => ({
+      '../config': () => ({
         contracts: { dir: '../../test/assets/contracts' }
       }),
       'truffle-contract': () => ({
