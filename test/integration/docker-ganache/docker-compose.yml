@@ -7,7 +7,7 @@ services:
       - 8545:8545
     entrypoint:
       - node
-      - ./build/cli.node.js
+      - ./ganache.core.cli.js
       - --mnemonic=drum muscle maximum umbrella night initial prevent auction pink old fault media
       - --host=0.0.0.0
       - --port=8545
