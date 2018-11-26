@@ -336,7 +336,7 @@ const withOptionalNonce = (nonce, transaction) =>
  * @param {TransactionOptions} [params.txOptions = {}] - Transaction options.
  * @returns {Promise<RawTransaction>} The promise of raw transaction object.
  */
-tx.createTx = function({ fromAddress, contractName, method, args, assignedNonce = false, txOptions = {} }) {
+tx.createTx = async function({ fromAddress, contractName, method, args, assignedNonce = false, txOptions = {} }) {
   // merging txOptions
   const updatedTxOptions = _.merge({}, { gas: TX_GAS_LIMIT, gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID }, txOptions);
 
@@ -348,7 +348,7 @@ tx.createTx = function({ fromAddress, contractName, method, args, assignedNonce 
   }
 
   // create a transaction from the input parameters, the contract instance, and an optional nonce
-  const createTransaction = ([instance, nonce]) => {
+  const createTransaction = async ([instance, nonce]) => {
     try {
       return withOptionalNonce(nonce, {
         from: fromAddress,
@@ -368,7 +368,7 @@ tx.createTx = function({ fromAddress, contractName, method, args, assignedNonce 
         updatedTxOptions
       });
       if (!_.has(txOptions, 'nonce') && assignedNonce) {
-        nonceManager.getAccount(fromAddress).releaseNonce(nonce);
+        await nonceManager.releaseAccountNonce(fromAddress, nonce);
       }
       throw mapError(error);
     }
@@ -392,7 +392,13 @@ tx.createTx = function({ fromAddress, contractName, method, args, assignedNonce 
  * @param {TransactionOptions} [params.txOptions = {}] - Transaction options.
  * @returns {RawTransaction} The raw transaction object.
  */
-tx.createPlatformCoinTransferTx = function({ fromAddress, toAddress, value, assignedNonce = false, txOptions = {} }) {
+tx.createPlatformCoinTransferTx = async function({
+  fromAddress,
+  toAddress,
+  value,
+  assignedNonce = false,
+  txOptions = {}
+}) {
   // Merging txOptions
   const updatedTxOptions = _.merge({}, { gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID }, txOptions);
 

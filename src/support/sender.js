@@ -132,13 +132,12 @@ function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions =
   // handle a transaction chain send error
   const handleSendError = error => {
     logger.error('Tx send error:', serializeError(error));
-    const account = nonceManager.getAccount(fromAddress);
-    unprocessedRawTransactions.forEach((rawTx, idx) => {
+    unprocessedRawTransactions.forEach(async (rawTx, idx) => {
       // We do NOT release failed transaction (i.e. first unprocessed tx) nonce
       // if it failed due to the issue with that specific nonce.
       // We release all unprocessed transaction nonces regardless of error type, so they could be recalculated.
       if (idx > 0 || !(error instanceof InvalidNonceError)) {
-        account.releaseNonce(rawTx.nonce);
+        await nonceManager.releaseAccountNonce(fromAddress, rawTx.nonce);
       }
     });
 
@@ -233,12 +232,12 @@ const sendTransaction = ({ transaction, signTx }) => {
  * @param nonce optional - if exists, the nonce given to this transaction before externally signing it
  * @return {Function}
  */
-const handleSendError = ({ parameters, nonce }) => error => {
+const handleSendError = ({ parameters, nonce }) => async error => {
   logger.error('Tx send error:', serializeError(error));
   // If we assigned a nonce to this transaction, release it.
   // We do NOT release nonce if transaction failed due to the issue with that specific nonce.
   if (nonce && !(error instanceof InvalidNonceError)) {
-    nonceManager.getAccount(parameters.fromAddress).releaseNonce(nonce);
+    await nonceManager.releaseAccountNonce(parameters.fromAddress, nonce);
   }
   throw error;
 };
