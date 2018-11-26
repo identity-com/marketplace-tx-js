@@ -17,7 +17,7 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Escrow', () => {
   let escrowAddress;
@@ -32,21 +32,21 @@ describe('Escrow', () => {
   const credentialItemIds = ['0xb5784440e237737fe62c5703fe5b0153cf9b28e6dd481a13790c885d10e8497e'];
 
   before('Set escrow contract address', async () => {
-    escrowAddress = (await marketplacetx.tx.contractInstance('CvcEscrow')).address;
+    escrowAddress = (await marketplaceTx.tx.contractInstance('CvcEscrow')).address;
   });
 
   before('Set escrow amount with price lookup', async () => {
-    const [type, name, version] = marketplacetx.ontology.parseExternalId(credentialItems[0]);
-    escrowAmount = (await marketplacetx.pricing.getPrice(idvAddress, type, name, version)).price.toNumber();
+    const [type, name, version] = marketplaceTx.ontology.parseExternalId(credentialItems[0]);
+    escrowAmount = (await marketplaceTx.pricing.getPrice(idvAddress, type, name, version)).price.toNumber();
   });
 
   async function place(scopeRequestId) {
-    const [requestorBefore, escrowBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress }
     ]);
 
-    const placePromise = marketplacetx.escrow.place(
+    const placePromise = marketplaceTx.escrow.place(
       idrAddress,
       signTx,
       idvAddress,
@@ -56,11 +56,11 @@ describe('Escrow', () => {
     );
 
     // Place funds to escrow
-    await marketplacetx.tx.waitForMine(placePromise);
+    await marketplaceTx.tx.waitForMine(placePromise);
 
     const placeReturnValue = await placePromise;
 
-    const [requestorAfter, escrowAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress }
     ]);
@@ -74,12 +74,12 @@ describe('Escrow', () => {
 
   async function placeBatch(scopeRequestIds) {
     const batchAmount = escrowAmount * scopeRequestIds.length;
-    const [requestorBefore, escrowBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress }
     ]);
 
-    const placeBatchPromise = marketplacetx.escrow.placeBatch(
+    const placeBatchPromise = marketplaceTx.escrow.placeBatch(
       idrAddress,
       signTx,
       idvAddress,
@@ -89,11 +89,11 @@ describe('Escrow', () => {
     );
 
     // Place funds to escrow
-    await marketplacetx.tx.waitForMine(placeBatchPromise);
+    await marketplaceTx.tx.waitForMine(placeBatchPromise);
 
     const placeBatchReturnValue = await placeBatchPromise;
 
-    const [requestorAfter, escrowAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress }
     ]);
@@ -106,14 +106,14 @@ describe('Escrow', () => {
   }
 
   async function release(scopeRequestId) {
-    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
       { address: idvAddress }
     ]);
 
-    const releasePromise = marketplacetx.escrow.release(
+    const releasePromise = marketplaceTx.escrow.release(
       platformAddress,
       signTx,
       idrAddress,
@@ -122,11 +122,11 @@ describe('Escrow', () => {
     );
 
     // Release tokens.
-    await marketplacetx.tx.waitForMine(releasePromise);
+    await marketplaceTx.tx.waitForMine(releasePromise);
 
     const releaseReturnValue = await releasePromise;
 
-    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -149,14 +149,14 @@ describe('Escrow', () => {
 
   async function releaseBatch(scopeRequestIdsToRelease, scopeRequestIdsToKeep) {
     const amountAfter = escrowAmount * scopeRequestIdsToRelease.length;
-    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
       { address: idvAddress }
     ]);
 
-    const releaseBatchPromise = marketplacetx.escrow.releaseBatch(
+    const releaseBatchPromise = marketplaceTx.escrow.releaseBatch(
       platformAddress,
       signTx,
       idrAddress,
@@ -166,11 +166,11 @@ describe('Escrow', () => {
     );
 
     // Release tokens.
-    await marketplacetx.tx.waitForMine(releaseBatchPromise);
+    await marketplaceTx.tx.waitForMine(releaseBatchPromise);
 
     const releaseBatchReturnValue = await releaseBatchPromise;
 
-    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -192,7 +192,7 @@ describe('Escrow', () => {
   }
 
   async function refund(scopeRequestId) {
-    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -200,11 +200,11 @@ describe('Escrow', () => {
     ]);
 
     // Refund CVC from escrow
-    await marketplacetx.tx.waitForMine(
-      marketplacetx.escrow.refund(platformAddress, signTx, idrAddress, idvAddress, scopeRequestId)
+    await marketplaceTx.tx.waitForMine(
+      marketplaceTx.escrow.refund(platformAddress, signTx, idrAddress, idvAddress, scopeRequestId)
     );
 
-    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -225,7 +225,7 @@ describe('Escrow', () => {
 
   async function refundBatch(scopeRequestIdsToRefund) {
     const batchAmount = escrowAmount * scopeRequestIdsToRefund.length;
-    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplacetx.token.getBalances([
+    const [requestorBefore, escrowBefore, platformBefore, idvBefore] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -233,11 +233,11 @@ describe('Escrow', () => {
     ]);
 
     // Refund CVC from escrow
-    await marketplacetx.tx.waitForMine(
-      marketplacetx.escrow.refundBatch(platformAddress, signTx, idrAddress, idvAddress, scopeRequestIdsToRefund)
+    await marketplaceTx.tx.waitForMine(
+      marketplaceTx.escrow.refundBatch(platformAddress, signTx, idrAddress, idvAddress, scopeRequestIdsToRefund)
     );
 
-    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplacetx.token.getBalances([
+    const [requestorAfter, escrowAfter, platformAfter, idvAfter] = await marketplaceTx.token.getBalances([
       { address: idrAddress },
       { address: escrowAddress },
       { address: platformAddress },
@@ -257,19 +257,19 @@ describe('Escrow', () => {
   }
 
   async function approve(owner, amount) {
-    const escrowContract = await marketplacetx.tx.contractInstance('CvcEscrow');
-    return marketplacetx.tx.waitForMine(
-      marketplacetx.token.approveWithReset(owner, signTx, escrowContract.address, amount)
+    const escrowContract = await marketplaceTx.tx.contractInstance('CvcEscrow');
+    return marketplaceTx.tx.waitForMine(
+      marketplaceTx.token.approveWithReset(owner, signTx, escrowContract.address, amount)
     );
   }
 
   async function mineBlock() {
     // Dummy tx to make sure block is mined since place escrow tx.
-    await marketplacetx.tx.waitForMine(marketplacetx.token.approve(idrAddress, signTx, idrAddress, 0));
+    await marketplaceTx.tx.waitForMine(marketplaceTx.token.approve(idrAddress, signTx, idrAddress, 0));
   }
 
   async function setTimeoutThreshold(threshold) {
-    await marketplacetx.tx.waitForMine(marketplacetx.escrow.setTimeoutThreshold(platformAddress, signTx, threshold));
+    await marketplaceTx.tx.waitForMine(marketplaceTx.escrow.setTimeoutThreshold(platformAddress, signTx, threshold));
   }
 
   describe('Place and release', () => {
@@ -278,14 +278,14 @@ describe('Escrow', () => {
       const scopeRequestId = generateRandomScopeRequestId();
 
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
       });
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -297,7 +297,7 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, escrowAmount, 1, credentialItemIds, 1, false);
       });
 
@@ -309,7 +309,7 @@ describe('Escrow', () => {
       });
 
       it('verify released funds', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 2, credentialItemIds, 1, false);
       });
     });
@@ -319,14 +319,14 @@ describe('Escrow', () => {
       const scopeRequestIds = [generateRandomScopeRequestId(), generateRandomScopeRequestId()];
 
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
       });
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -338,11 +338,11 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         const batchAmount = escrowAmount * scopeRequestIds.length;
         assertVerify(verify, batchAmount, 1, credentialItemIds, 1, false);
         // ensure partial batch is not recognized
-        const empty = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestIds[0]);
+        const empty = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestIds[0]);
         assertVerify(empty, 0, 0, [], 0, false);
       });
 
@@ -354,7 +354,7 @@ describe('Escrow', () => {
       });
 
       it('verify released funds', async () => {
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, 0, 2, credentialItemIds, 1, false);
       });
     });
@@ -363,14 +363,14 @@ describe('Escrow', () => {
       // Generate new ids
       const scopeRequestIds = _.times(5, generateRandomScopeRequestId);
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
       });
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -378,11 +378,11 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         const batchAmount = escrowAmount * scopeRequestIds.length;
         assertVerify(verify, batchAmount, 1, credentialItemIds, 1, false);
         // ensure partial batch is not recognized
-        const empty = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestIds[0]);
+        const empty = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestIds[0]);
         assertVerify(empty, 0, 0, [], 0, false);
       });
 
@@ -400,7 +400,7 @@ describe('Escrow', () => {
 
           // Release & verify released items.
           const { returnValue } = await releaseBatch(toRelease, toKeep);
-          const released = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, releasedBatch);
+          const released = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, releasedBatch);
           assertVerify(released, 0, 2, credentialItemIds, 0, false);
           // Kept items will be released on next iteration, copy them to verify.
           releasedBatch = toKeep;
@@ -408,13 +408,13 @@ describe('Escrow', () => {
           // Partial release creates a new placement. Verify placement ID and kept items state.
           if (toKeep.length) {
             expect(returnValue.placementId).to.exist;
-            const kept = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, toKeep);
+            const kept = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, toKeep);
             assertVerify(kept, escrowAmount * toKeep.length, 1, credentialItemIds, 0, false);
           }
         }
 
         // Verify the last item was released.
-        const released = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, toRelease);
+        const released = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, toRelease);
         assertVerify(released, 0, 2, credentialItemIds, 0, false);
       }).timeout(1000 * 60 * 5);
     });
@@ -426,7 +426,7 @@ describe('Escrow', () => {
       const scopeRequestId = generateRandomScopeRequestId();
 
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
@@ -436,7 +436,7 @@ describe('Escrow', () => {
       before('Set minimal escrow allowance', () => approve(idrAddress, 1));
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -444,14 +444,14 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, escrowAmount, 1, credentialItemIds, 1, false);
       });
 
       it('release funds', () => release(scopeRequestId));
 
       it('verify released funds', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 2, credentialItemIds, 1, false);
       });
     });
@@ -462,14 +462,14 @@ describe('Escrow', () => {
       const scopeRequestId = generateRandomScopeRequestId();
 
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
       });
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -477,7 +477,7 @@ describe('Escrow', () => {
 
       it('verify placed', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, escrowAmount, 1, credentialItemIds, 1, false);
       });
 
@@ -490,7 +490,7 @@ describe('Escrow', () => {
       });
 
       it('verify cancelled', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 3, credentialItemIds, 1, false);
       });
     });
@@ -499,14 +499,14 @@ describe('Escrow', () => {
       const scopeRequestIds = _.times(5, generateRandomScopeRequestId);
 
       before('Ensure default timeout threshold', async () => {
-        const timeout = await marketplacetx.escrow.timeoutThreshold();
+        const timeout = await marketplaceTx.escrow.timeoutThreshold();
         if (timeout.toNumber() < 10) {
           await setTimeoutThreshold(defaultTimeout);
         }
       });
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -515,7 +515,7 @@ describe('Escrow', () => {
       it('verify batch placed', async () => {
         await mineBlock();
         const batchAmount = escrowAmount * scopeRequestIds.length;
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, batchAmount, 1, credentialItemIds, 1, false);
       });
 
@@ -529,7 +529,7 @@ describe('Escrow', () => {
       });
 
       it('verify batch cancelled', async () => {
-        const verify = await marketplacetx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
+        const verify = await marketplaceTx.escrow.verifyBatch(idrAddress, idvAddress, scopeRequestIds);
         assertVerify(verify, 0, 3, credentialItemIds, 1, false);
       });
     });
@@ -547,12 +547,12 @@ describe('Escrow', () => {
 
     it('deny repeated place after release', () =>
       expect(
-        marketplacetx.tx.waitForMine(
-          marketplacetx.escrow.place(idrAddress, signTx, idvAddress, scopeRequestId, escrowAmount, credentialItems)
+        marketplaceTx.tx.waitForMine(
+          marketplaceTx.escrow.place(idrAddress, signTx, idvAddress, scopeRequestId, escrowAmount, credentialItems)
         )
       ).to.be.rejected);
 
-    after('Reset approve on CVC transfer', () => marketplacetx.token.approve(idrAddress, signTx, escrowAddress, 0));
+    after('Reset approve on CVC transfer', () => marketplaceTx.token.approve(idrAddress, signTx, escrowAddress, 0));
   });
 
   describe('Place after refund', () => {
@@ -571,7 +571,7 @@ describe('Escrow', () => {
     it('repeated place after refund', () => place(scopeRequestId));
 
     it('verify placed funds', async () => {
-      const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+      const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
       assertVerify(verify, escrowAmount, 1, credentialItemIds, 0, false);
     });
 
@@ -580,13 +580,13 @@ describe('Escrow', () => {
 
   describe('Preapprove, place and release', () => {
     const getAllowance = async owner => {
-      const contracts = await marketplacetx.tx.contractInstances('CvcToken', 'CvcEscrow');
+      const contracts = await marketplaceTx.tx.contractInstances('CvcToken', 'CvcEscrow');
       const spender = contracts.CvcEscrow.address;
       return contracts.CvcToken.allowance(owner, spender);
     };
 
     before('Ensure default timeout threshold', async () => {
-      const timeout = await marketplacetx.escrow.timeoutThreshold();
+      const timeout = await marketplaceTx.escrow.timeoutThreshold();
       if (timeout.toNumber() < 10) {
         await setTimeoutThreshold(defaultTimeout);
       }
@@ -601,7 +601,7 @@ describe('Escrow', () => {
       after('Release funds', () => release(scopeRequestId));
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -616,7 +616,7 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, escrowAmount, 1, credentialItemIds, 1, false);
       });
     });
@@ -629,7 +629,7 @@ describe('Escrow', () => {
       after('Release funds', () => release(scopeRequestId));
 
       it('verify empty escrow', async () => {
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, 0, 0, [], 0, false);
       });
 
@@ -645,7 +645,7 @@ describe('Escrow', () => {
 
       it('verify placed funds', async () => {
         await mineBlock();
-        const verify = await marketplacetx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
+        const verify = await marketplaceTx.escrow.verify(idrAddress, idvAddress, scopeRequestId);
         assertVerify(verify, escrowAmount, 1, credentialItemIds, 1, false);
       });
     });
@@ -655,8 +655,8 @@ describe('Escrow', () => {
     it('should calculate the same placement ID regardless of order', async () => {
       const scopeRequestIds = [generateRandomScopeRequestId(), generateRandomScopeRequestId()];
 
-      const placementId1 = await marketplacetx.escrow.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds);
-      const placementId2 = await marketplacetx.escrow.calculatePlacementId(
+      const placementId1 = await marketplaceTx.escrow.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds);
+      const placementId2 = await marketplaceTx.escrow.calculatePlacementId(
         idrAddress,
         idvAddress,
         _.reverse(scopeRequestIds)
@@ -672,7 +672,7 @@ describe('Escrow', () => {
         '0x7a4df8677c2406a0298715eb069d938849a50e984f7184abdac8d14530a7eccc'
       ];
 
-      const placementId = await marketplacetx.escrow.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds);
+      const placementId = await marketplaceTx.escrow.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds);
 
       expect(placementId).to.equal(expectedPlacementId);
     });

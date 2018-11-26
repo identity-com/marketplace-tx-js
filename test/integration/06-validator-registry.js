@@ -12,10 +12,10 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Validator Registry', () => {
-  const { idvRegistry } = marketplacetx;
+  const { idvRegistry } = marketplaceTx;
   const registryOwner = users[0].address;
   const anotherAccount = users[1].address;
 
@@ -27,7 +27,7 @@ describe('Validator Registry', () => {
     describe('when the sender is not the registry owner', () => {
       const from = anotherAccount;
       it('fails', async () => {
-        await expect(marketplacetx.tx.waitForMine(idvRegistry.set(from, signTx, idvAddress, idvName, idvDescription)))
+        await expect(marketplaceTx.tx.waitForMine(idvRegistry.set(from, signTx, idvAddress, idvName, idvDescription)))
           .to.be.eventually.rejected;
       });
     });
@@ -40,7 +40,7 @@ describe('Validator Registry', () => {
         beforeEach(async () => expect(await idvRegistry.exists(newIdvAddress)).to.be.false);
 
         it('adds new entry', async () => {
-          await marketplacetx.tx.waitForMine(idvRegistry.set(from, signTx, newIdvAddress, idvName, idvDescription));
+          await marketplaceTx.tx.waitForMine(idvRegistry.set(from, signTx, newIdvAddress, idvName, idvDescription));
           const idvRecord = await idvRegistry.get(newIdvAddress);
           assertValidatorRecord(idvRecord, { idvAddress: newIdvAddress, idvName, idvDescription });
         });
@@ -52,7 +52,7 @@ describe('Validator Registry', () => {
         it('updates the existing entry', async () => {
           const newName = `${idvName} Updated`;
           const newDescription = `${idvDescription} Updated`;
-          await marketplacetx.tx.waitForMine(idvRegistry.set(from, signTx, newIdvAddress, newName, newDescription));
+          await marketplaceTx.tx.waitForMine(idvRegistry.set(from, signTx, newIdvAddress, newName, newDescription));
           const idvRecord = await idvRegistry.get(newIdvAddress);
 
           assertValidatorRecord(idvRecord, {

@@ -21,17 +21,17 @@ const ERR_UNDERPRICED_REPLACEMENT = 2;
 const TX_SIGNING_TIMEOUT = process.env.TX_SIGNING_TIMEOUT || 100;
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Sending transactions', () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   after(() => {
-    marketplacetx.nonce.clearAccounts();
+    marketplaceTx.nonce.clearAccounts();
   });
 
   const getTransactionInfo = txHash =>
     new Promise((resolve, reject) => {
-      marketplacetx.tx.web3.eth.getTransaction(txHash, (err, data) => {
+      marketplaceTx.tx.web3.eth.getTransaction(txHash, (err, data) => {
         if (err) reject(err);
         else resolve(data);
       });
@@ -53,7 +53,7 @@ describe('Sending transactions', () => {
         if (errorType === ERR_NONCE_TOO_LOW) {
           // since we override the nonce it cannot be released correctly by error handler
           // so we release it manually beforehand
-          marketplacetx.nonce.getAccount(rawTx.from).releaseNonce(rawTx.nonce);
+          await marketplaceTx.nonce.releaseAccountNonce(rawTx.from, rawTx.nonce);
           rawTx.nonce = '0x0';
         } else if (errorType === ERR_UNDERPRICED_REPLACEMENT) {
           const signIntermediateTx = (addressFrom, rawTx) => {
@@ -61,7 +61,7 @@ describe('Sending transactions', () => {
             rawTx.nonce -= 1;
             return signTx(addressFrom, rawTx);
           };
-          await marketplacetx.tx.send(addressFrom, signIntermediateTx, 'CvcToken', 'transfer', [addressFrom, 1]);
+          await marketplaceTx.tx.send(addressFrom, signIntermediateTx, 'CvcToken', 'transfer', [addressFrom, 1]);
         }
 
         return sleep(delay).then(() => signTx(addressFrom, rawTx));
@@ -69,18 +69,18 @@ describe('Sending transactions', () => {
     }
 
     it('should retrieve block number', async () => {
-      const blockNumber = await marketplacetx.tx.blockNumber();
+      const blockNumber = await marketplaceTx.tx.blockNumber();
       expect(blockNumber).to.be.at.least(1);
     });
 
     it('should send single transaction', async () => {
       const amount = 100;
-      const [address1Before, address2Before] = await marketplacetx.token.getBalances([
+      const [address1Before, address2Before] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
-      await marketplacetx.tx.waitForMine(
-        marketplacetx.sender.send({
+      await marketplaceTx.tx.waitForMine(
+        marketplaceTx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(),
           contractName: 'CvcToken',
@@ -88,7 +88,7 @@ describe('Sending transactions', () => {
           params: [address2, amount]
         })
       );
-      const [address1After, address2After] = await marketplacetx.token.getBalances([
+      const [address1After, address2After] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
@@ -106,7 +106,7 @@ describe('Sending transactions', () => {
 
       it('should log and release nonce', async () => {
         await expect(
-          marketplacetx.sender.send({
+          marketplaceTx.sender.send({
             fromAddress: address1,
             signTx: getSignTx(),
             contractName: 'CvcToken',
@@ -123,14 +123,14 @@ describe('Sending transactions', () => {
     });
 
     it('should fail to send tx with low nonce', async () => {
-      const sendPromise = marketplacetx.sender.send({
+      const sendPromise = marketplaceTx.sender.send({
         fromAddress: address1,
         signTx: getSignTx(ERR_NONCE_TOO_LOW),
         contractName: 'CvcToken',
         method: 'transfer',
         params: [address2, 1]
       });
-      await expect(sendPromise).to.be.eventually.rejectedWith(marketplacetx.errors.InvalidNonceError);
+      await expect(sendPromise).to.be.eventually.rejectedWith(marketplaceTx.errors.InvalidNonceError);
     });
 
     describe('Transaction signing timeout', () => {
@@ -140,20 +140,20 @@ describe('Sending transactions', () => {
       it('should fail when signing request times out', async () => {
         const amount = 100;
         const txSigningDelay = TX_SIGNING_TIMEOUT + 10; // set delay above the allowed timeout
-        const sendPromise = marketplacetx.sender.send({
+        const sendPromise = marketplaceTx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(null, txSigningDelay),
           contractName: 'CvcToken',
           method: 'transfer',
           params: [address2, amount]
         });
-        await expect(sendPromise).to.be.eventually.rejectedWith(marketplacetx.util.timeout.Error);
+        await expect(sendPromise).to.be.eventually.rejectedWith(marketplaceTx.util.timeout.Error);
       });
 
       it('should succeed when tx is signed on time', () => {
         const amount = 100;
         const txSigningDelay = TX_SIGNING_TIMEOUT - 50; // set delay below the allowed timeout
-        const sendPromise = marketplacetx.sender.send({
+        const sendPromise = marketplaceTx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(null, txSigningDelay),
           contractName: 'CvcToken',
@@ -167,7 +167,7 @@ describe('Sending transactions', () => {
 
     describe('Setting custom gas price and limit', () => {
       it('sets custom gas limit and price', async () => {
-        const { transactionHash } = await marketplacetx.sender.send({
+        const { transactionHash } = await marketplaceTx.sender.send({
           fromAddress: address1,
           signTx: getSignTx(),
           contractName: 'CvcToken',
@@ -186,7 +186,7 @@ describe('Sending transactions', () => {
       });
 
       it('sets custom gas limit and price for platform coin transfer', async () => {
-        const { transactionHash } = await marketplacetx.sender.sendPlatformCoin({
+        const { transactionHash } = await marketplaceTx.sender.sendPlatformCoin({
           fromAddress: address1,
           signTx: getSignTx(),
           value: 0,
@@ -213,20 +213,20 @@ describe('Sending transactions', () => {
 
     it('should send single transaction', async () => {
       const amount = 100;
-      const [address1Before, address2Before] = await marketplacetx.token.getBalances([
+      const [address1Before, address2Before] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
 
-      await marketplacetx.tx.waitForMine(
-        marketplacetx.sender.send({
+      await marketplaceTx.tx.waitForMine(
+        marketplaceTx.sender.send({
           fromAddress: address1,
           contractName: 'CvcToken',
           method: 'transfer',
           params: [address2, amount]
         })
       );
-      const [address1After, address2After] = await marketplacetx.token.getBalances([
+      const [address1After, address2After] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
@@ -252,7 +252,7 @@ describe('Sending transactions', () => {
 
           // since we override the nonce it cannot be released correctly by error handler
           // so we release it manually beforehand
-          marketplacetx.nonce.getAccount(txToFail.from).releaseNonce(txToFail.nonce);
+          await marketplaceTx.nonce.releaseAccountNonce(txToFail.from, txToFail.nonce);
           txToFail.nonce = '0x0'; // set nonce to 0 to trigger "nonce to low" error
         }
 
@@ -262,11 +262,11 @@ describe('Sending transactions', () => {
 
     it('should send transaction batch', async () => {
       const amount = 10;
-      const [address1Before, address2Before] = await marketplacetx.token.getBalances([
+      const [address1Before, address2Before] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
-      await marketplacetx.sender.sendChain({
+      await marketplaceTx.sender.sendChain({
         fromAddress: address1,
         signTx: getSignBatchTx(),
         transactions: [
@@ -275,7 +275,7 @@ describe('Sending transactions', () => {
           { contract: 'CvcToken', method: 'transfer', args: [address2, amount] }
         ]
       });
-      const [address1After, address2After] = await marketplacetx.token.getBalances([
+      const [address1After, address2After] = await marketplaceTx.token.getBalances([
         { address: address1 },
         { address: address2 }
       ]);
@@ -285,7 +285,7 @@ describe('Sending transactions', () => {
     });
 
     it('should set custom gas price and limit to the whole batch', async () => {
-      const txReceipt = await marketplacetx.sender.sendChain({
+      const txReceipt = await marketplaceTx.sender.sendChain({
         fromAddress: address1,
         signTx: getSignBatchTx(),
         transactions: [{ contract: 'CvcToken', method: 'approve', args: [address1, 0] }],
@@ -312,13 +312,13 @@ describe('Sending transactions', () => {
         { contract: 'CvcToken', method: 'transfer', args: [address2, 50] }
       ];
       // We fail batch from third transaction.
-      const sendPromise = marketplacetx.sender.sendChain({
+      const sendPromise = marketplaceTx.sender.sendChain({
         fromAddress: address1,
         signTx: getSignBatchTx(ERR_NONCE_TOO_LOW, txToFailIndex),
         transactions: txBatch
       });
       await expect(sendPromise)
-        .to.be.eventually.rejectedWith(marketplacetx.errors.FailedBatchError)
+        .to.be.eventually.rejectedWith(marketplaceTx.errors.FailedBatchError)
         .and.have.property('transactions')
         .to.deep.equal(txBatch.slice(txToFailIndex));
     });
@@ -330,7 +330,7 @@ describe('Sending transactions', () => {
       it('should succeed when transaction batch is signed on time', async () => {
         const amount = 10;
         const txSigningDelay = TX_SIGNING_TIMEOUT - 10; // set delay below the allowed timeout
-        const sendPromise = marketplacetx.sender.sendChain({
+        const sendPromise = marketplaceTx.sender.sendChain({
           fromAddress: address1,
           signTx: getSignBatchTx(null, null, txSigningDelay),
           transactions: [
@@ -344,7 +344,7 @@ describe('Sending transactions', () => {
       it('should fail when transaction batch signing request times out', async () => {
         const amount = 10;
         const txSigningDelay = TX_SIGNING_TIMEOUT + 10; // set delay above the allowed timeout
-        const sendPromise = marketplacetx.sender.sendChain({
+        const sendPromise = marketplaceTx.sender.sendChain({
           fromAddress: address1,
           signTx: getSignBatchTx(null, null, txSigningDelay),
           transactions: [
@@ -354,9 +354,9 @@ describe('Sending transactions', () => {
         });
 
         await expect(sendPromise)
-          .to.be.eventually.rejectedWith(marketplacetx.errors.FailedBatchError)
+          .to.be.eventually.rejectedWith(marketplaceTx.errors.FailedBatchError)
           .and.have.property('cause')
-          .instanceOf(marketplacetx.util.timeout.Error);
+          .instanceOf(marketplaceTx.util.timeout.Error);
       });
     });
   });
@@ -399,9 +399,9 @@ describe('Getting contract instance', () => {
   after(() => fs.unlinkSync(screwedUpContractFileName));
 
   it('should fail if the contract is not deployed at the address specified in the JSON file', () => {
-    const contractPromise = marketplacetx.tx.contractInstance('CvcTokenScrewedUp');
+    const contractPromise = marketplaceTx.tx.contractInstance('CvcTokenScrewedUp');
 
-    return expect(contractPromise).to.be.eventually.rejectedWith(marketplacetx.errors.NotDeployedError);
+    return expect(contractPromise).to.be.eventually.rejectedWith(marketplaceTx.errors.NotDeployedError);
   });
 
   it('should memoize the result of the first call', async () => {
@@ -410,12 +410,12 @@ describe('Getting contract instance', () => {
     // Make a copy so that we don't delete the real contract
     const copyName = 'CvcTokenCopy';
 
-    const firstContract = await marketplacetx.tx.contractInstance(copyName);
+    const firstContract = await marketplaceTx.tx.contractInstance(copyName);
 
     // delete the copy so it cannot be read again
     deleteContract(copyName);
 
-    const secondContract = await marketplacetx.tx.contractInstance(copyName);
+    const secondContract = await marketplaceTx.tx.contractInstance(copyName);
 
     return expect(secondContract).to.equal(firstContract);
   });

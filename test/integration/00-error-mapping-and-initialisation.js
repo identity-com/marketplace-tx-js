@@ -9,7 +9,7 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Error mapper', () => {
   const nonceTooLowError = new Error('nonce too low');
@@ -46,8 +46,8 @@ describe('Error mapper', () => {
 });
 
 describe('The service, on initialisation', () => {
-  const { tx } = marketplacetx;
-  const { CONTRACTS } = marketplacetx.constants;
+  const { tx } = marketplaceTx;
+  const { CONTRACTS } = marketplaceTx.constants;
 
   it('should fail to load if a contract cannot be found', async () => {
     // blatantly taking advantage of the fact that javascript

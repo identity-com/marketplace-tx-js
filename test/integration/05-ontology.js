@@ -11,7 +11,7 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Ontology', () => {
   const type = 'credential';
@@ -20,8 +20,8 @@ describe('Ontology', () => {
   const reference = 'https://www.identity.com/';
   const referenceType = 'JSON-LD-Context';
   const referenceHash = '0x2cd9bf92c5e20b1b410f5ace94d963a96e89156fbe65b70365e8596b37f1f165';
-  const { ontology } = marketplacetx;
-  const { waitForMine } = marketplacetx.tx;
+  const { ontology } = marketplaceTx;
+  const { waitForMine } = marketplaceTx.tx;
   const admin = users[0].address;
 
   describe('get', () => {
