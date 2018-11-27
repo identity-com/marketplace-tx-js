@@ -49,7 +49,7 @@ Before using the library, you should:
 
 ```js
 const MarketplaceTx = require('marketplace-tx');
-const marketplaceTx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({web3});
 ```
 
 Where ```web3``` is a valid web3 object connected to a node.
@@ -60,9 +60,15 @@ MarketplaceTx is configured by the file config/<STAGE>.json, where STAGE is pass
 
 Alternatively, it is possible to pass in config to the constructor:
 
+The MarketplaceTx constructor accepts two arguments:
+1. context - to inject dependencies, like web3, logger, etc.
+2. config - to provide configuration parameters
+
+
 ```js
+const context = { web3 };
 const config = { ... };
-const marketplaceTx = new MarketplaceTx(web3, config);
+const marketplaceTx = new MarketplaceTx(context, config);
 ```
 
 ### Logging 
@@ -71,7 +77,7 @@ MarketplaceTx will log automatically to the console. To use your own logger:
 
 ```js
 const logger = winston();
-const marketplaceTx = new MarketplaceTx(web3, config, logger);
+const marketplaceTx = new MarketplaceTx({web3, logger}, config);
 ```
 
 ### Contracts
@@ -81,7 +87,7 @@ You can specify the path to to the artifacts folder by passing it to the config 
 
 ```js
 const config = { contracts: { dir: 'contracts/' } };
-const marketplaceTx = new MarketplaceTx(web3, config);
+const marketplaceTx = new MarketplaceTx(context, config);
 ```
 
 
