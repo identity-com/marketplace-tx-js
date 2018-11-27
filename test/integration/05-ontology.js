@@ -109,12 +109,10 @@ describe('Ontology', () => {
   });
 
   describe('deprecate credential item', () => {
-    before('add outdated credential items for deprecation', () =>
-      Promise.all([
-        waitForMine(ontology.add(admin, signTx, 'claim', 'dob', 'v2.0', reference, referenceType, referenceHash)),
-        waitForMine(ontology.add(admin, signTx, 'claim', 'dob', 'v3.0', reference, referenceType, referenceHash))
-      ])
-    );
+    before('add outdated credential items for deprecation', async () => {
+      await waitForMine(ontology.add(admin, signTx, 'claim', 'dob', 'v2.0', reference, referenceType, referenceHash));
+      await waitForMine(ontology.add(admin, signTx, 'claim', 'dob', 'v3.0', reference, referenceType, referenceHash));
+    });
 
     it('by external ID', async () => {
       const freshClaim = await ontology.getByTypeNameVersion('claim', 'dob', 'v2.0');

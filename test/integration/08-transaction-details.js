@@ -165,22 +165,6 @@ describe('TX Details', () => {
       sendPromiseResultTxHash = sendPromiseResult.transactionHash;
     });
 
-    after('fix the nonce gap and wait for mining', async function() {
-      if (isGanache) {
-        this.skip();
-      }
-      const fixNonceSendPromise = marketplaceTx.sender.send({
-        fromAddress: address1,
-        signTx: getSignTx(-2),
-        contractName: 'CvcToken',
-        method: 'approve',
-        params: [address1, 0]
-      });
-
-      await marketplaceTx.tx.waitForMine(fixNonceSendPromise);
-      await marketplaceTx.tx.waitForMine(sendPromise);
-    });
-
     it('should find transaction status to be queued', async () => {
       const nonce = await marketplaceTx.tx.getTransactionCount(address1);
       const getStatusResult = await marketplaceTx.transactionDetails.getTransactionStatus(address1, nonce + 1);
