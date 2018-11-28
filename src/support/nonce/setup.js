@@ -6,7 +6,7 @@
  * */
 
 const _ = require('lodash');
-const logger = require('../../logger/index');
+const logger = require('../../logger');
 const { mapError } = require('../errors');
 const Store = require('../store/inmemory');
 
@@ -116,12 +116,23 @@ nonceManager.getNonceForAccount = async function(address) {
 };
 
 nonceManager.releaseAccountNonce = async function(address, nonce) {
-  const nonces = await this.store.get(address);
-  if (_.isObject(nonces)) {
-    delete nonces[Number(nonce)];
-    await this.store.put(address, nonces);
+  const storedNonces = await this.store.get(address);
+  if (_.isObject(storedNonces)) {
+    delete storedNonces[Number(nonce)];
+    await this.store.put(address, storedNonces);
   }
   logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
+};
+
+nonceManager.releaseAccountNonces = async function(address, nonces) {
+  if (_.isEmpty(nonces)) return;
+
+  const storedNonces = await this.store.get(address);
+  if (_.isObject(storedNonces)) {
+    nonces.forEach(nonce => delete storedNonces[Number(nonce)]);
+    await this.store.put(address, storedNonces);
+  }
+  nonces.forEach(nonce => logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`));
 };
 
 nonceManager.clearAccounts = async function() {

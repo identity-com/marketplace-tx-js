@@ -130,16 +130,25 @@ function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions =
   const sendAndConfirmInOrder = txs => _.castArray(txs).reduce(sendAndConfirmReducer, Promise.resolve());
 
   // handle a transaction chain send error
-  const handleSendError = error => {
+  const handleSendError = async error => {
     logger.error('Tx send error:', serializeError(error));
-    unprocessedRawTransactions.forEach(async (rawTx, idx) => {
-      // We do NOT release failed transaction (i.e. first unprocessed tx) nonce
-      // if it failed due to the issue with that specific nonce.
-      // We release all unprocessed transaction nonces regardless of error type, so they could be recalculated.
-      if (idx > 0 || !(error instanceof InvalidNonceError)) {
-        await nonceManager.releaseAccountNonce(fromAddress, rawTx.nonce);
-      }
-    });
+    const noncesToRelease = _.reduce(
+      unprocessedRawTransactions,
+      (result, rawTx, idx) => {
+        // We do NOT release failed transaction (i.e. first unprocessed tx) nonce
+        // if it failed due to the issue with that specific nonce.
+        // We release all other unprocessed transaction nonces regardless of error type, so they could be recalculated.
+        if (idx > 0 || !(error instanceof InvalidNonceError)) {
+          return [...result, rawTx.nonce];
+        }
+        return result;
+      },
+      []
+    );
+
+    if (noncesToRelease.length) {
+      await nonceManager.releaseAccountNonces(fromAddress, noncesToRelease);
+    }
 
     throw new FailedTxChainError(unprocessedTransactions, error);
   };
