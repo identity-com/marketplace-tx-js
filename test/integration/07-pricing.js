@@ -15,11 +15,11 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
 describe('Pricing', () => {
-  const { pricing, ontology } = marketplacetx;
-  const { waitForMine } = marketplacetx.tx;
+  const { pricing, ontology } = marketplaceTx;
+  const { waitForMine } = marketplaceTx.tx;
 
   // Accounts
   const admin = users[0].address;
@@ -37,7 +37,7 @@ describe('Pricing', () => {
   const deprecated = false;
 
   // Return price to default value.
-  after(() => marketplacetx.tx.waitForMine(pricing.setPrice(idv, signTx, type, name, version, price)));
+  after(() => marketplaceTx.tx.waitForMine(pricing.setPrice(idv, signTx, type, name, version, price)));
 
   describe('Getting prices:', () => {
     describe('when looking up single price', () => {

@@ -21,12 +21,7 @@ describe('tx.js', () => {
       };
       sandbox.stub(tx, 'contractInstance').resolves(contractInstanceStub);
       sandbox.stub(nonce, 'getNonceForAccount').resolves(12345);
-      const account = { releaseNonce: () => {} };
-      releaseNonceSpy = sandbox.spy(account, 'releaseNonce');
-      sandbox
-        .stub(nonce, 'getAccount')
-        .withArgs('0x48089757dbc23bd8e49436247c9966ff15802978')
-        .returns({ releaseNonce: releaseNonceSpy });
+      releaseNonceSpy = sandbox.spy(nonce, 'releaseAccountNonce');
     });
 
     afterEach(() => {
@@ -44,7 +39,7 @@ describe('tx.js', () => {
         })
       ).to.be.rejectedWith('Invalid number of arguments to Solidity function');
 
-      expect(releaseNonceSpy.calledOnceWithExactly(12345)).to.be.true;
+      expect(releaseNonceSpy.calledOnceWithExactly('0x48089757dbc23bd8e49436247c9966ff15802978', 12345)).to.be.true;
     });
   });
 
