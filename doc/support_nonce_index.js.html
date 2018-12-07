@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>logger/index.js - Documentation</title>
+    <title>support/nonce/index.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -31,7 +31,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">logger/index.js</h1>
+    <h1 class="page-title">support/nonce/index.js</h1>
     
 
     
@@ -42,13 +42,13 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * Exports a logger created by marketplace-tx initialisation
+ * Exports a nonce manager created by marketplace-tx initialisation
  * so that it is available cleanly to all other modules.
  *
  * This file should be imported only after setup has been
- * called for the first time with a logger:
+ * called for the first time with required dependencies:
  *
- * require('./logger/setup')(logger);
+ * require('./support/nonce/setup')(web3, nonceStore);
  */
 module.exports = require('./setup')();
 </code></pre>

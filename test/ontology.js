@@ -6,7 +6,8 @@ const MarketplaceTx = require('../src/marketplace-tx');
 
 const { expect } = chai;
 
-const marketplaceTx = new MarketplaceTx(new Web3(new FakeProvider()), { preloadContracts: false }, false);
+const web3 = new Web3(new FakeProvider());
+const marketplaceTx = new MarketplaceTx({ web3 }, { preloadContracts: false });
 
 describe('ontology.js', () => {
   const { ontology } = marketplaceTx;

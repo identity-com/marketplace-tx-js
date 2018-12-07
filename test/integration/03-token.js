@@ -12,24 +12,24 @@ const url = process.env.ETH_NODE_URL;
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
 // initialise the marketplace-tx library and set the web3 connection
-const marketplacetx = new MarketplaceTx(web3);
+const marketplaceTx = new MarketplaceTx({ web3 });
 
-const { waitForMine } = marketplacetx.tx;
+const { waitForMine } = marketplaceTx.tx;
 
 describe('Cvc Token', () => {
   const address1 = users[0].address;
   const address2 = users[1].address;
 
   it('should transfer tokens and return correct token balances', async () => {
-    const transferAmount = marketplacetx.token.toCred(10);
-    const [account1Before, account2Before] = await marketplacetx.token.getBalances([
+    const transferAmount = marketplaceTx.token.toCred(10);
+    const [account1Before, account2Before] = await marketplaceTx.token.getBalances([
       { address: address1 },
       { address: address2 }
     ]);
 
-    await waitForMine(marketplacetx.token.transfer(address1, signTx, address2, transferAmount));
+    await waitForMine(marketplaceTx.token.transfer(address1, signTx, address2, transferAmount));
 
-    const [account1After, account2After] = await marketplacetx.token.getBalances([
+    const [account1After, account2After] = await marketplaceTx.token.getBalances([
       { address: address1 },
       { address: address2 }
     ]);
@@ -39,9 +39,9 @@ describe('Cvc Token', () => {
   });
 
   it('should return correct token balance for single address', async () => {
-    const [account1, account2] = await marketplacetx.coin.getBalances([{ address: address1 }, { address: address2 }]);
+    const [account1, account2] = await marketplaceTx.coin.getBalances([{ address: address1 }, { address: address2 }]);
 
-    expect(await marketplacetx.coin.getBalance(address1)).bignumber.equal(account1.balance);
-    expect(await marketplacetx.coin.getBalance(address2)).bignumber.equal(account2.balance);
+    expect(await marketplaceTx.coin.getBalance(address1)).bignumber.equal(account1.balance);
+    expect(await marketplaceTx.coin.getBalance(address2)).bignumber.equal(account2.balance);
   });
 });
