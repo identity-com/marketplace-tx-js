@@ -67,50 +67,49 @@ class NonceManager {
    */
   async getNonceForAccount(address) {
     logger.debug(`Requesting nonce for address ${address}`);
-    const calculateVacantNonce = async ([txCount, { pending, queued }]) => {
-      // Retrieve stored nonces for specific account.
-      let nonces = await this.store.get(address);
 
-      // Keep nonces which are not mined yet
-      // and release nonces which values are below the account tx count (i.e. lowest possible value).
-      nonces = _.pickBy(nonces, (value, nonce) => {
-        if (nonce >= txCount) return true;
-        logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
-        return false;
-      });
+    // Retrieve stored nonces for the provided account.
+    let nonces = await this.store.get(address);
+    // Retrieve current transaction count and transaction pool state for the provided account.
+    const [txCount, { pending, queued }] = await Promise.all([
+      this.getTransactionCount(address),
+      this.inspectTxPool(address)
+    ]);
 
-      // Get all known transactions by combining local cache with data from tx pool.
-      const knownTransactions = _.assign({}, nonces, pending, queued);
+    // Keep nonces which are not mined yet
+    // and release nonces which values are below the account tx count (i.e. lowest possible value).
+    nonces = _.pickBy(nonces, (value, nonce) => {
+      if (nonce >= txCount) return true;
+      logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
+      return false;
+    });
 
-      // Get all used nonces.
-      const usedNonces = _.keys(knownTransactions);
-      if (usedNonces.length) {
-        logger.debug(`Account '${address}', used nonces: ${usedNonces.join(', ')}`);
-      }
+    // Get all known transactions by combining local cache with data from tx pool.
+    const knownTransactions = _.assign({}, nonces, pending, queued);
 
-      // Calculate max used nonce.
-      const maxUsedNonce = usedNonces.reduce((a, b) => Math.max(a, b), txCount);
+    // Get all used nonces.
+    const usedNonces = _.keys(knownTransactions);
+    if (usedNonces.length) {
+      logger.debug(`Account '${address}', used nonces: ${usedNonces.join(', ')}`);
+    }
 
-      // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
-      let nextNonce = txCount;
-      while (nextNonce <= maxUsedNonce) {
-        // Stop at the first non-used nonce (i.e. first gap).
-        if (!(nextNonce in knownTransactions)) break;
-        // Increment nonce. If no gaps found, return the value next after max used nonce.
-        nextNonce += 1;
-      }
+    // Calculate max used nonce.
+    const maxUsedNonce = usedNonces.reduce((a, b) => Math.max(a, b), txCount);
 
-      nonces[nextNonce] = true;
-      await this.store.put(address, nonces);
-      logger.debug(`Account '${address}', nonce acquired: ${nextNonce}`);
+    // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
+    let nextNonce = txCount;
+    while (nextNonce <= maxUsedNonce) {
+      // Stop at the first non-used nonce (i.e. first gap).
+      if (!(nextNonce in knownTransactions)) break;
+      // Increment nonce. If no gaps found, return the value next after max used nonce.
+      nextNonce += 1;
+    }
 
-      return nextNonce;
-    };
+    nonces[nextNonce] = true;
+    await this.store.put(address, nonces);
+    logger.debug(`Account '${address}', nonce acquired: ${nextNonce}`);
 
-    const txCountPromise = this.getTransactionCount(address);
-    const txPoolPromise = this.inspectTxPool(address);
-
-    return Promise.all([txCountPromise, txPoolPromise]).then(calculateVacantNonce);
+    return nextNonce;
   }
 
   /**
