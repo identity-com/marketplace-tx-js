@@ -88,19 +88,17 @@ const assertCodeAtAddress = async contractAddress => {
  * @returns {Promise<object>} The contract object.
  * @throws NoNetworkInContractError
  */
-const detectDeployedContract = async (contract, contractName) => {
-  try {
-    const deployedContract = await contract.deployed();
-    await assertCodeAtAddress(deployedContract.address);
-
-    return deployedContract;
-  } catch (error) {
-    if (error instanceof NotDeployedError) throw error;
-
-    logger.debug('Current network not found in truffle-contract json');
-    throw new NoNetworkInContractError(contractName, error);
-  }
-};
+const detectDeployedContract = (contract, contractName) =>
+  contract
+    .deployed()
+    .catch(error => {
+      logger.debug('Current network not found in truffle-contract json');
+      throw new NoNetworkInContractError(contractName, error);
+    })
+    .then(async deployedContract => {
+      await assertCodeAtAddress(deployedContract.address);
+      return deployedContract;
+    });
 
 /**
  * Returns the contract artifact
@@ -132,7 +130,6 @@ tx.contractInstance = _.memoize(async contractName => {
     }
     // Load contract artifact file.
     const contractArtifact = await getContractArtifact(contractName);
-
     // Create contract object.
     const contract = truffleContract(contractArtifact);
     contract.setProvider(tx.web3.currentProvider);
@@ -319,7 +316,11 @@ const withOptionalNonce = (nonce, transaction) =>
  */
 tx.createTx = async function({ fromAddress, contractName, method, args, assignedNonce = false, txOptions = {} }) {
   // merging txOptions
-  const updatedTxOptions = _.defaults(txOptions, { gas: TX_GAS_LIMIT, gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID });
+  const updatedTxOptions = _.defaults({}, txOptions, {
+    gas: TX_GAS_LIMIT,
+    gasPrice: TX_GAS_PRICE,
+    chainId: TX_CHAIN_ID
+  });
 
   // determining contract instance promise
   const instancePromise = tx.contractInstance(contractName);
@@ -389,7 +390,7 @@ tx.createPlatformCoinTransferTx = async function({
   txOptions = {}
 }) {
   // Merging txOptions
-  const updatedTxOptions = _.defaults(txOptions, { gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID });
+  const updatedTxOptions = _.defaults({}, txOptions, { gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID });
 
   // determining tx nonce promise
   let noncePromise = Promise.resolve();
