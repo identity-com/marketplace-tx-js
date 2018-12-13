@@ -88,7 +88,7 @@ function destructArray(arrayOrObject) {
 
 function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions = {} }) {
   // Merging txOptions
-  const updatedTxOptions = _.merge({}, { waitForMineTimeout: TX_CHAIN_MINING_TIMEOUT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { waitForMineTimeout: TX_CHAIN_MINING_TIMEOUT });
 
   const unprocessedTransactions = _.clone(transactions);
   let unprocessedRawTransactions = [];
@@ -298,7 +298,7 @@ const send = async function(parameters) {
 const sendPlatformCoin = async function(parameters) {
   const { fromAddress, toAddress, signTx, value, txOptions = {} } = parameters;
   // Merge txOptions
-  const updatedTxOptions = _.merge({}, { gas: ETH_TX_GAS_LIMIT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { gas: ETH_TX_GAS_LIMIT });
 
   // handle any error, passing the original transaction into the error handler
   // to handle any cleanup

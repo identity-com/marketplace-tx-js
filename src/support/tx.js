@@ -189,7 +189,7 @@ tx.loadContracts = () => tx.contractInstances(...CONTRACTS);
  * Return latest known block number from the current network.
  * @returns {Promise<number>} Block number.
  */
-tx.blockNumber = util.promisify(cb => tx.web3.eth.getBlockNumber(cb))();
+tx.blockNumber = () => util.promisify(cb => tx.web3.eth.getBlockNumber(cb))();
 
 /**
  * Returns an event produced by specific smart contract.
