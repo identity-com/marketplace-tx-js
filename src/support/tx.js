@@ -88,18 +88,14 @@ const assertCodeAtAddress = async contractAddress => {
  * @returns {Promise<object>} The contract object.
  * @throws NoNetworkInContractError
  */
-const detectDeployedContract = async (contract, contractName) => {
-  try {
-    const deployedContract = await contract.deployed();
-    await assertCodeAtAddress(deployedContract.address);
-    return deployedContract;
-  } catch (error) {
-    if (error instanceof NotDeployedError) throw error;
-
-    logger.debug('Current network not found in truffle-contract json');
-    throw new NoNetworkInContractError(contractName, error);
-  }
-};
+const detectDeployedContract = (contract, contractName) =>
+  contract
+    .deployed()
+    .catch(error => {
+      logger.debug('Current network not found in truffle-contract json');
+      throw new NoNetworkInContractError(contractName, error);
+    })
+    .then(deployedContract => assertCodeAtAddress(deployedContract.address).then(() => deployedContract));
 
 /**
  * Returns the contract artifact
