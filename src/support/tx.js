@@ -149,11 +149,15 @@ tx.contractInstance = _.memoize(async contractName => {
       }
     }
 
-    logger.debug(`Address not configured for '${contractName}' contract. Using autodetect...`);
+    logger.debug(`Address is not configured for '${contractName}' contract. Using autodetect...`);
     return detectDeployedContract(contract, contractName);
   } catch (error) {
-    if (error instanceof CvcError) throw error;
-    else throw new CvcError(`Error loading contract: ${contractName}`, error);
+    logger.error(`Error loading contract ${contractName}`, error);
+    if (error instanceof CvcError) {
+      throw error;
+    } else {
+      throw new CvcError(`Error loading contract: ${contractName}`, error);
+    }
   }
 });
 
@@ -185,9 +189,7 @@ tx.loadContracts = () => tx.contractInstances(...CONTRACTS);
  * Return latest known block number from the current network.
  * @returns {Promise<number>} Block number.
  */
-tx.blockNumber = function() {
-  return util.promisify(cb => tx.web3.eth.getBlockNumber(cb))();
-};
+tx.blockNumber = util.promisify(cb => tx.web3.eth.getBlockNumber(cb))();
 
 /**
  * Returns an event produced by specific smart contract.
@@ -440,10 +442,10 @@ tx.createPlatformCoinTransferTx = async function({
  * @param {string} txHash - A hash of the transaction to get receipt for.
  * @returns {Promise<TransactionReceipt|CvcError|Error>} A promise of the transaction receipt or error.
  */
-tx.getTransactionReceipt = async function(txHash) {
+tx.getTransactionReceipt = function(txHash) {
   const getTransactionReceiptPromise = util.promisify(cb => tx.web3.eth.getTransactionReceipt(txHash, cb));
   try {
-    return await getTransactionReceiptPromise();
+    return getTransactionReceiptPromise();
   } catch (error) {
     logger.error(`Error retrieving transaction receipt for ${txHash}.`, error);
     throw mapError(error);
@@ -493,10 +495,10 @@ tx.getTransactionReceiptMined = function(txHash, timeout = TX_MINING_TIMEOUT) {
  * @param {string} address - The address to get the numbers of transactions from.
  * @returns {Promise<number|CvcError|Error>} A promise of the transaction count or error.
  */
-tx.getTransactionCount = async address => {
+tx.getTransactionCount = address => {
   const getTransactionCountPromise = util.promisify(cb => tx.web3.eth.getTransactionCount(address, cb));
   try {
-    return await getTransactionCountPromise();
+    return getTransactionCountPromise();
   } catch (error) {
     logger.error(`Error retrieving transaction count for ${address}.`, error);
     throw mapError(error);

@@ -227,10 +227,10 @@ const sendChain = function(parameters) {
 const sendTransaction = async ({ transaction, signTx }) => {
   if (signTx) {
     const signTxPromise = signTx(transaction.from, transaction);
-    const signedTransaction = destructArray(await timeout(signTxPromise, TX_SIGNING_TIMEOUT));
-    assertSignerMatchesSender(transaction.from)(signedTransaction);
-
-    return sendRawTransaction(signedTransaction);
+    return timeout(signTxPromise, TX_SIGNING_TIMEOUT)
+      .then(destructArray)
+      .then(assertSignerMatchesSender(transaction.from))
+      .then(sendRawTransaction);
   }
 
   return signAndSend(transaction);
@@ -261,7 +261,7 @@ const handleSendError = ({ parameters, nonce }) => async error => {
  *  method Contract method to call.
  *  params Contract method parameters.
  *  txOptions Map of available transaction overrides (eg: gas, gasPrice, nonce, waitForMineTimeout, etc)
- * @return {*}
+ * @return {Promise<*>}
  */
 const send = async function(parameters) {
   const { fromAddress, signTx, contractName, method, params, value = '0x0', txOptions = {} } = parameters;
