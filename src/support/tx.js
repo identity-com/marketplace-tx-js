@@ -88,17 +88,18 @@ const assertCodeAtAddress = async contractAddress => {
  * @returns {Promise<object>} The contract object.
  * @throws NoNetworkInContractError
  */
-const detectDeployedContract = (contract, contractName) =>
-  contract
-    .deployed()
-    .catch(error => {
-      logger.debug('Current network not found in truffle-contract json');
-      throw new NoNetworkInContractError(contractName, error);
-    })
-    .then(async deployedContract => {
-      await assertCodeAtAddress(deployedContract.address);
-      return deployedContract;
-    });
+const detectDeployedContract = async (contract, contractName) => {
+  try {
+    const deployedContract = await contract.deployed();
+    await assertCodeAtAddress(deployedContract.address);
+    return deployedContract;
+  } catch (error) {
+    if (error instanceof NotDeployedError) throw error;
+
+    logger.debug('Current network not found in truffle-contract json');
+    throw new NoNetworkInContractError(contractName, error);
+  }
+};
 
 /**
  * Returns the contract artifact
@@ -189,7 +190,7 @@ tx.loadContracts = () => tx.contractInstances(...CONTRACTS);
  * Return latest known block number from the current network.
  * @returns {Promise<number>} Block number.
  */
-tx.blockNumber = () => util.promisify(cb => tx.web3.eth.getBlockNumber(cb))();
+tx.blockNumber = util.promisify(cb => tx.web3.eth.getBlockNumber(cb));
 
 /**
  * Returns an event produced by specific smart contract.

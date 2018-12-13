@@ -38,10 +38,10 @@ async function sendRawTransaction(hex) {
   });
 
   try {
-    const txHash = await sendRawTransactionPromise();
-    logger.info(`Transaction hash: ${txHash}`, hex);
+    const transactionHash = await sendRawTransactionPromise();
+    logger.info(`Transaction hash: ${transactionHash}`, hex);
 
-    return { transactionHash: txHash };
+    return { transactionHash };
   } catch (error) {
     logger.error('sendRawTransactionPromise rejected: ', error, hex);
     throw mapError(error);
@@ -57,10 +57,10 @@ async function signAndSend(transaction) {
   const sendTransactionPromise = util.promisify(cb => tx.web3.eth.sendTransaction(transaction, cb));
 
   try {
-    const txHash = await sendTransactionPromise();
-    logger.info(`Transaction hash: ${txHash}`, transaction);
+    const transactionHash = await sendTransactionPromise();
+    logger.info(`Transaction hash: ${transactionHash}`, transaction);
 
-    return { transactionHash: txHash };
+    return { transactionHash };
   } catch (error) {
     logger.error('sendTransactionPromise rejected: ', error, transaction);
     throw mapError(error);
@@ -224,7 +224,7 @@ const sendChain = function(parameters) {
  * @param transaction
  * @returns {Promise<{transactionHash}>}
  */
-const sendTransaction = async ({ transaction, signTx }) => {
+const sendTransaction = ({ transaction, signTx }) => {
   if (signTx) {
     const signTxPromise = signTx(transaction.from, transaction);
     return timeout(signTxPromise, TX_SIGNING_TIMEOUT)
