@@ -56,17 +56,13 @@ const mapCredentialItemPrice = function([id, price, idv, type, name, version, de
 
 /**
  * Checks whether the price exists.
- * @param {Object} credentialItemPrice - an object containing an id of a
- * credential item price in the contract
- * @returns {*}
+ * @param {CredentialItemPrice} credentialItemPrice - Credential item price object
  */
-const checkPriceIsSet = function(credentialItemPrice) {
+const assertPrice = function(credentialItemPrice) {
   // By convention all existing records must have non empty ID.
   if (!credentialItemPrice.id || /0x0{64}/.test(credentialItemPrice.id)) {
     throw new NotFoundError('Undefined price');
   }
-
-  return credentialItemPrice;
 };
 
 /**
@@ -79,29 +75,31 @@ const checkPriceIsSet = function(credentialItemPrice) {
  * @param {string} version - see {@link CredentialItemPrice}.version
  * @returns {*}
  */
-pricing.getPrice = function(idv, type, name, version) {
+pricing.getPrice = async function(idv, type, name, version) {
   assertAddress(idv);
-  return tx
-    .contractInstance(CONTRACT_PRICING)
-    .then(instance => instance.getPrice(idv, type, name, version))
-    .then(mapCredentialItemPrice)
-    .then(checkPriceIsSet);
+  const pricingContract = await tx.contractInstance(CONTRACT_PRICING);
+  const price = mapCredentialItemPrice(await pricingContract.getPrice(idv, type, name, version));
+  assertPrice(price);
+
+  return price;
 };
 
 /**
  * @alias module:pricing.getAllPrices
  * @memberOf pricing
  * @description Returns all prices.
- * @return {Promise<array>}
+ * @return {Promise<CredentialItemPrice[]>}
  */
-pricing.getAllPrices = function() {
-  return tx
-    .contractInstance(CONTRACT_PRICING)
-    .then(instance =>
-      instance
-        .getAllIds()
-        .then(ids => Promise.all(ids.map(id => instance.getPriceById(id).then(mapCredentialItemPrice))))
-    );
+pricing.getAllPrices = async function() {
+  const pricingContract = await tx.contractInstance(CONTRACT_PRICING);
+  const ids = await pricingContract.getAllIds();
+  const prices = await Promise.all(ids.map(id => pricingContract.getPriceById(id)));
+
+  return prices.map(priceRecord => {
+    const price = mapCredentialItemPrice(priceRecord);
+    assertPrice(price);
+    return price;
+  });
 };
 
 /**
@@ -115,7 +113,7 @@ pricing.getAllPrices = function() {
  * @param {string} name - see {@link CredentialItemPrice}.name
  * @param {string} version - see {@link CredentialItemPrice}.version
  * @param {string} price - the credential item price in creds (CVC x 10e-8)
- * @returns {*}
+ * @returns {Promise<{transactionHash}>}
  */
 pricing.setPrice = function(fromAddress, signTx, type, name, version, price) {
   assertAddress(fromAddress);
@@ -139,7 +137,7 @@ pricing.setPrice = function(fromAddress, signTx, type, name, version, price) {
  * @param {string} type - see {@link CredentialItemPrice}.type
  * @param {string} name - see {@link CredentialItemPrice}.name
  * @param {string} version - see {@link CredentialItemPrice}.version
- * @returns {*}
+ * @returns {Promise<{transactionHash}>}
  */
 pricing.deletePrice = function(fromAddress, signTx, type, name, version) {
   assertAddress(fromAddress);
