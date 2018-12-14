@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>support/asserts - Documentation</title>
+    <title>NonceManager - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -31,7 +31,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">support/asserts</h1>
+    <h1 class="page-title">NonceManager</h1>
     
 
     
@@ -43,6 +43,12 @@
 
 <header>
     
+        <h2>
+        NonceManager
+        </h2>
+        
+            <div class="class-description"><p>A service that dispenses nonces, resolving any nonce gaps and
+ensuring concurrent transactions do not result in nonce clashes.</p></div>
         
     
 </header>
@@ -53,7 +59,85 @@
         
             
 
-            
+    
+    <h2>Constructor</h2>
+    
+
+    <h4 class="name" id="NonceManager"><span class="type-signature"></span>new NonceManager<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line9">line 9</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         </div>
     
@@ -78,7 +162,7 @@
 
     
 
-    <h4 class="name" id=".assertAddress"><span class="type-signature">(static) </span>assertAddress<span class="signature">(addressToTest)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="clearAccounts"><span class="type-signature">(async) </span>clearAccounts<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
 
     
 
@@ -90,7 +174,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="support_asserts.js.html">support/asserts.js</a>, <a href="support_asserts.js.html#line59">line 59</a>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line152">line 152</a>
     </li></ul></dd>
     
 
@@ -130,7 +214,109 @@
 
 
 <div class="description">
-    <p>Checks if provided string is a valid ETH address.</p>
+    <p>Clears stored nonce data of all accounts.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getNonceForAccount"><span class="type-signature">(async) </span>getNonceForAccount<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise.&lt;number>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line68">line 68</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Returns the next correct transaction nonce for address.</p>
 </div>
 
 
@@ -168,15 +354,327 @@
 
         <tr>
             
-                <td class="name"><code>addressToTest</code></td>
+                <td class="name"><code>address</code></td>
             
 
             <td class="type">
             
-                
-<span class="param-type">string</span>
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The address to get the nonce for.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;number></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getTransactionCount"><span class="type-signature">(async) </span>getTransactionCount<span class="signature">(address, defaultBlock)</span><span class="type-signature"> &rarr; {Promise.&lt;number>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line30">line 30</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Returns current transaction count for specific address.</p>
+<p>NOTE: There are reports of incorrect behaviour of web3.eth.getTransactionCount
+which affects the count of pending transactions.
+https://github.com/ethereum/go-ethereum/issues/2880
+At this time we could only rely on the count of mined transactions.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The address to get the numbers of transactions from.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defaultBlock</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The default block number to use when querying a state.
+  &quot;earliest&quot;, the genesis block
+  &quot;latest&quot;, the latest block (current head of the blockchain)
+  &quot;pending&quot;, the currently mined block (including pending transactions)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;number></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="inspectTxPool"><span class="type-signature">(async) </span>inspectTxPool<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise.&lt;any>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Retrieves txpool content (pending and queued transactions) for specific address.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
             
             </td>
 
@@ -215,7 +713,7 @@
     </dt>
     <dd>
         
-<span class="param-type">string</span>
+<span class="param-type">Promise.&lt;any></span>
 
 
     </dd>
@@ -229,7 +727,7 @@
 
     
 
-    <h4 class="name" id=".assertAmount"><span class="type-signature">(static) </span>assertAmount<span class="signature">(amount)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    <h4 class="name" id="releaseAccountNonce"><span class="type-signature">(async) </span>releaseAccountNonce<span class="signature">(address, nonce)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
 
     
 
@@ -241,7 +739,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="support_asserts.js.html">support/asserts.js</a>, <a href="support_asserts.js.html#line14">line 14</a>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -281,7 +779,7 @@
 
 
 <div class="description">
-    <p>Asserts amount for sanity check.</p>
+    <p>Releases a specific nonce and returns it back to the pool, so that it can be used for other transaction.</p>
 </div>
 
 
@@ -319,15 +817,10 @@
 
         <tr>
             
-                <td class="name"><code>amount</code></td>
+                <td class="name"><code>address</code></td>
             
 
             <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
             
             </td>
 
@@ -335,142 +828,14 @@
 
             
 
-            <td class="description last"><p>The escrow amount in creds.</p></td>
+            <td class="description last"></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-        
-            
-
-    
-
-    <h4 class="name" id=".assertCredentialItemPrice"><span class="type-signature">(static) </span>assertCredentialItemPrice<span class="signature">(price)</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="support_asserts.js.html">support/asserts.js</a>, <a href="support_asserts.js.html#line44">line 44</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Asserts that provided number matches valid price criteria.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>price</code></td>
+                <td class="name"><code>nonce</code></td>
             
 
             <td class="type">
@@ -512,7 +877,7 @@
     </dt>
     <dd>
         
-<span class="param-type">number</span>
+<span class="param-type">Promise.&lt;void></span>
 
 
     </dd>
@@ -526,7 +891,7 @@
 
     
 
-    <h4 class="name" id=".assertCredentialItems"><span class="type-signature">(static) </span>assertCredentialItems<span class="signature">(credentialItems)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    <h4 class="name" id="releaseAccountNonces"><span class="type-signature">(async) </span>releaseAccountNonces<span class="signature">(address, nonces)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
 
     
 
@@ -538,7 +903,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="support_asserts.js.html">support/asserts.js</a>, <a href="support_asserts.js.html#line29">line 29</a>
+        <a href="support_nonce_manager.js.html">support/nonce/manager.js</a>, <a href="support_nonce_manager.js.html#line137">line 137</a>
     </li></ul></dd>
     
 
@@ -578,7 +943,8 @@
 
 
 <div class="description">
-    <p>Asserts credential items array is not empty.</p>
+    <p>Releases multiple nonces at once and returns them back to the pool,
+so that they can be used for other transactions.</p>
 </div>
 
 
@@ -616,15 +982,10 @@
 
         <tr>
             
-                <td class="name"><code>credentialItems</code></td>
+                <td class="name"><code>address</code></td>
             
 
             <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
             
             </td>
 
@@ -632,150 +993,17 @@
 
             
 
-            <td class="description last"><p>An array containing credential item IDs</p></td>
+            <td class="description last"></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-        
-            
-
-    
-
-    <h4 class="name" id=".assertCredentialItemType"><span class="type-signature">(static) </span>assertCredentialItemType<span class="signature">(type)</span><span class="type-signature"> &rarr; {string}</span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="support_asserts.js.html">support/asserts.js</a>, <a href="support_asserts.js.html#line74">line 74</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Allows only certain credential item types</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>type</code></td>
+                <td class="name"><code>nonces</code></td>
             
 
             <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
             
             </td>
 
@@ -814,7 +1042,7 @@
     </dt>
     <dd>
         
-<span class="param-type">string</span>
+<span class="param-type">Promise.&lt;void></span>
 
 
     </dd>
