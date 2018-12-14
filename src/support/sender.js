@@ -1,5 +1,4 @@
 /* eslint-disable import/no-extraneous-dependencies */
-// FIXME we could chain the promises a little bit better in this module
 const util = require('util');
 const EthTx = require('ethereumjs-tx');
 // This shim is necessary so that marketplaceTx can be imported in the browser
@@ -28,43 +27,44 @@ const ETH_TX_GAS_LIMIT = 21000;
 
 /**
  * Sends signed transaction to blockchain node.
- * @param hex Signed transaction
- * @returns {Promise<any>}
+ * @param hex Signed transaction.
+ * @returns {Promise<{transactionHash}>}
  */
-function sendRawTransaction(hex) {
+async function sendRawTransaction(hex) {
   logger.debug('marketplace-tx sendRawTransaction sending raw tx: ', hex);
   const sendRawTransactionPromise = util.promisify(cb => {
     logger.debug('Calling tx.web3.eth.sendRawTransaction.', hex);
     return tx.web3.eth.sendRawTransaction(hex, cb);
   });
 
-  return sendRawTransactionPromise()
-    .then(txHash => {
-      logger.info(`Transaction hash: ${txHash}`, hex);
-      return { transactionHash: txHash };
-    })
-    .catch(error => {
-      logger.error('sendRawTransactionPromise rejected: ', error, hex);
-      throw mapError(error);
-    });
+  try {
+    const transactionHash = await sendRawTransactionPromise();
+    logger.info(`Transaction hash: ${transactionHash}`, hex);
+
+    return { transactionHash };
+  } catch (error) {
+    logger.error('sendRawTransactionPromise rejected: ', error, hex);
+    throw mapError(error);
+  }
 }
 
 /**
  * Signs a transaction (online) and sends to the blockchain node
  * @param transaction a transaction to sign and send to the blockchain.
- * @returns {Promise<any>}
+ * @returns {Promise<{transactionHash}>}
  */
-function signAndSend(transaction) {
+async function signAndSend(transaction) {
   const sendTransactionPromise = util.promisify(cb => tx.web3.eth.sendTransaction(transaction, cb));
 
-  return sendTransactionPromise()
-    .then(txHash => {
-      logger.info(`Transaction hash: ${txHash}`, transaction);
-      return { transactionHash: txHash };
-    })
-    .catch(error => {
-      throw mapError(error);
-    });
+  try {
+    const transactionHash = await sendTransactionPromise();
+    logger.info(`Transaction hash: ${transactionHash}`, transaction);
+
+    return { transactionHash };
+  } catch (error) {
+    logger.error('sendTransactionPromise rejected: ', error, transaction);
+    throw mapError(error);
+  }
 }
 
 // Make sure we used fromAddress's private key to sign tx
@@ -88,7 +88,7 @@ function destructArray(arrayOrObject) {
 
 function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions = {} }) {
   // Merging txOptions
-  const updatedTxOptions = _.merge({}, { waitForMineTimeout: TX_CHAIN_MINING_TIMEOUT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { waitForMineTimeout: TX_CHAIN_MINING_TIMEOUT });
 
   const unprocessedTransactions = _.clone(transactions);
   let unprocessedRawTransactions = [];
@@ -112,16 +112,17 @@ function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions =
   // If we are signing them online they will be signed. Otherwise we
   // expect them to have already been signed
   // Each transaction will be sent and awaited for mining receipt.
-  const sendAndConfirmReducer = (promise, transaction) => {
+  const sendAndConfirmReducer = async (promise, transaction) => {
     logger.debug('sendAndConfirmReducer for transaction: ', transaction);
-    return promise.then(() =>
-      sendAndConfirm(transaction).then(result => {
-        // Remove processed transaction.
-        unprocessedTransactions.shift();
-        unprocessedRawTransactions.shift();
-        return result;
-      })
-    );
+
+    await promise;
+    const sendResult = sendAndConfirm(transaction);
+
+    // Remove processed transaction.
+    unprocessedTransactions.shift();
+    unprocessedRawTransactions.shift();
+
+    return sendResult;
   };
 
   // given an array of transactions or single transaction,
@@ -154,48 +155,48 @@ function TransactionChainToSend({ fromAddress, signTx, transactions, txOptions =
   };
 
   // given an array of transactions, sign them all. If they take too long, time the operation out
-  const signAll = rawTransactions =>
-    timeout(signTx(fromAddress, rawTransactions), TX_SIGNING_TIMEOUT).then(signedTransactions =>
-      signedTransactions.map(assertSignerMatchesSender(fromAddress))
-    );
+  const signAll = async rawTransactions => {
+    const signedTransactions = await timeout(signTx(fromAddress, rawTransactions), TX_SIGNING_TIMEOUT);
+    return signedTransactions.map(assertSignerMatchesSender(fromAddress));
+  };
 
   // given an array of web3 transaction objects, sign them if they are
   // to be externally signed, and then send them to the blockchain
-  const sendTransactions = rawTransactions => {
+  const sendTransactions = async rawTransactions => {
     // Copy to prevent external modification.
     unprocessedRawTransactions = _.clone(rawTransactions);
 
     const transactionsToSendPromise = externallySigned ? signAll(rawTransactions) : Promise.resolve(rawTransactions);
 
-    return transactionsToSendPromise
-      .then(signedTransactions => {
-        logger.debug(
-          'Signed transactions being submitted from marketplace-tx.sender.sendTransactions: ',
-          signedTransactions
-        );
-        return signedTransactions;
-      })
-      .then(sendAndConfirmInOrder)
-      .catch(error => {
-        // Log the error here, because we don't have access to the transactions inside handleSendError.
-        logger.error('Could not sign or sendAndConfirmInOrder transactions. ', rawTransactions);
-        return handleSendError(error);
-      });
+    try {
+      const signedTransactions = await transactionsToSendPromise;
+      logger.debug(
+        'Signed transactions being submitted from marketplace-tx.sender.sendTransactions: ',
+        signedTransactions
+      );
+
+      return sendAndConfirmInOrder(signedTransactions);
+    } catch (error) {
+      // Log the error here, because we don't have access to the transactions inside handleSendError.
+      logger.error('Could not sign or sendAndConfirmInOrder transactions. ', rawTransactions);
+      return handleSendError(error);
+    }
   };
 
   /**
    * Send the chain of transactions
    * @return {*}
    */
-  this.send = () =>
-    tx
-      .createTxChain({
-        fromAddress,
-        transactions: unprocessedTransactions,
-        assignedNonce: externallySigned,
-        txOptions: updatedTxOptions
-      })
-      .then(sendTransactions);
+  this.send = async () => {
+    const rawTransactions = await tx.createTxChain({
+      fromAddress,
+      transactions: unprocessedTransactions,
+      assignedNonce: externallySigned,
+      txOptions: updatedTxOptions
+    });
+
+    return sendTransactions(rawTransactions);
+  };
 }
 
 /**
@@ -221,17 +222,17 @@ const sendChain = function(parameters) {
  * is provided, otherwise just send it.
  * @param {function} signTx - The callback to use to sign the transaction
  * @param transaction
- * @return {*}
+ * @returns {Promise<{transactionHash}>}
  */
 const sendTransaction = ({ transaction, signTx }) => {
   if (signTx) {
-    const signPromise = signTx(transaction.from, transaction);
-
-    return timeout(signPromise, TX_SIGNING_TIMEOUT)
+    const signTxPromise = signTx(transaction.from, transaction);
+    return timeout(signTxPromise, TX_SIGNING_TIMEOUT)
       .then(destructArray)
       .then(assertSignerMatchesSender(transaction.from))
       .then(sendRawTransaction);
   }
+
   return signAndSend(transaction);
 };
 
@@ -260,9 +261,9 @@ const handleSendError = ({ parameters, nonce }) => async error => {
  *  method Contract method to call.
  *  params Contract method parameters.
  *  txOptions Map of available transaction overrides (eg: gas, gasPrice, nonce, waitForMineTimeout, etc)
- * @return {*}
+ * @return {Promise<*>}
  */
-const send = function(parameters) {
+const send = async function(parameters) {
   const { fromAddress, signTx, contractName, method, params, value = '0x0', txOptions = {} } = parameters;
 
   // handle any error, passing the original transaction into the error handler
@@ -270,22 +271,22 @@ const send = function(parameters) {
   const sendWithErrorHandling = transaction =>
     sendTransaction({ transaction, signTx }).catch(handleSendError({ parameters, nonce: transaction.nonce }));
 
-  return tx
-    .createTx({
-      fromAddress,
-      contractName,
-      method,
-      value,
-      args: params,
-      // if the transaction is externally signed, we need to assign a nonce when creating the transaction
-      assignedNonce: !!signTx,
-      txOptions
-    })
-    .then(sendWithErrorHandling);
+  const transaction = await tx.createTx({
+    fromAddress,
+    contractName,
+    method,
+    value,
+    args: params,
+    // if the transaction is externally signed, we need to assign a nonce when creating the transaction
+    assignedNonce: !!signTx,
+    txOptions
+  });
+
+  return sendWithErrorHandling(transaction);
 };
 
 /**
- * Sends
+ * Sends platform coins (e.g. ETH).
  * @param parameters
  *  fromAddress: The address to send the coins from
  *  toAddress: The address to send the coins to
@@ -294,26 +295,31 @@ const send = function(parameters) {
  *  txOptions Map of available transaction overrides (eg: gas, gasPrice, nonce, waitForMineTimeout, etc)
  * @return {*}
  */
-const sendPlatformCoin = function(parameters) {
+const sendPlatformCoin = async function(parameters) {
   const { fromAddress, toAddress, signTx, value, txOptions = {} } = parameters;
   // Merge txOptions
-  const updatedTxOptions = _.merge({}, { gas: ETH_TX_GAS_LIMIT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { gas: ETH_TX_GAS_LIMIT });
 
   // handle any error, passing the original transaction into the error handler
   // to handle any cleanup
-  const sendWithErrorHandling = transaction =>
-    sendTransaction({ transaction, signTx }).catch(handleSendError({ parameters, nonce: transaction.nonce }));
+  const sendWithErrorHandling = transaction => {
+    try {
+      return sendTransaction({ transaction, signTx });
+    } catch (error) {
+      return handleSendError({ parameters, nonce: transaction.nonce })(error);
+    }
+  };
 
-  return tx
-    .createPlatformCoinTransferTx({
-      fromAddress,
-      toAddress,
-      value,
-      // if the transaction is externally signed, we need to assign a nonce when creating the transaction
-      assignedNonce: !!signTx,
-      txOptions: updatedTxOptions
-    })
-    .then(sendWithErrorHandling);
+  const transaction = await tx.createPlatformCoinTransferTx({
+    fromAddress,
+    toAddress,
+    value,
+    // if the transaction is externally signed, we need to assign a nonce when creating the transaction
+    assignedNonce: !!signTx,
+    txOptions: updatedTxOptions
+  });
+
+  return sendWithErrorHandling(transaction);
 };
 
 module.exports = {
