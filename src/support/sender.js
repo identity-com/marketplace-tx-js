@@ -261,7 +261,7 @@ const handleSendError = ({ parameters, nonce }) => async error => {
  *  method Contract method to call.
  *  params Contract method parameters.
  *  txOptions Map of available transaction overrides (eg: gas, gasPrice, nonce, waitForMineTimeout, etc)
- * @return {Promise<*>}
+ * @returns {Promise<{transactionHash}>}
  */
 const send = async function(parameters) {
   const { fromAddress, signTx, contractName, method, params, value = '0x0', txOptions = {} } = parameters;
@@ -293,7 +293,7 @@ const send = async function(parameters) {
  *  signTx: Optional transaction signing callback
  *  value: The coins to send
  *  txOptions Map of available transaction overrides (eg: gas, gasPrice, nonce, waitForMineTimeout, etc)
- * @return {*}
+ * @returns {Promise<{transactionHash}>}
  */
 const sendPlatformCoin = async function(parameters) {
   const { fromAddress, toAddress, signTx, value, txOptions = {} } = parameters;
