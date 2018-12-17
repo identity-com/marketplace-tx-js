@@ -23,11 +23,8 @@ coin.getBalance = address => util.promisify(cb => tx.web3.eth.getBalance(address
  * @param users
  * @returns {Promise<any[]>}
  */
-coin.getBalances = function(users) {
-  return Promise.all(
-    users.map(user => coin.getBalance(user.address).then(balance => Object.assign({}, user, { balance })))
-  );
-};
+coin.getBalances = users =>
+  Promise.all(users.map(user => coin.getBalance(user.address).then(balance => Object.assign({}, user, { balance }))));
 
 /**
  *
@@ -37,9 +34,9 @@ coin.getBalances = function(users) {
  * @param {int} value - The amount of coins to send
  * @returns {Promise<{transactionHash}>}
  */
-coin.transfer = function(fromAddress, signTx, toAddress, value) {
+coin.transfer = async function(fromAddress, signTx, toAddress, value) {
   try {
-    return sender.sendPlatformCoin({ fromAddress, signTx, toAddress, value });
+    return await sender.sendPlatformCoin({ fromAddress, signTx, toAddress, value });
   } catch (error) {
     logger.error(`Error transferring platform coin: ${error.message}`);
     throw error;

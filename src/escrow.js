@@ -180,8 +180,8 @@ async function addPlacementReturnValue(transactionReceipt, fromAddress, idvAddre
  * @param {number} [txOptions.gasPrice] - The gas price value provided by the sender in Wei.
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
  * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for transaction receipt before raising an error.
- * @returns {Promise<Array<object>>} An promise of an array of objects containing
- * transaction hash (see tx.js module) and returnValue object with placementId.
+ * @returns {Promise<object>} A promise of the transaction hash (see tx.js module)
+ * and returnValue object with placementId.
  */
 escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount, credentialItems, txOptions = {}) {
   return escrow.placeBatch(fromAddress, signTx, idvAddress, [scopeRequestId], amount, credentialItems, txOptions);
@@ -205,8 +205,8 @@ escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount,
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
  * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for
  * transaction receipt before raising an error.
- * @returns {Promise<Object>} An promise of an array of objects
- * containing transaction hash (see tx.js module) and returnValue object with placementId.
+ * @returns {Promise<object>} A promise of the transaction hash (see tx.js module)
+ * and returnValue object with placementId.
  */
 escrow.placeBatch = async function(
   fromAddress,

@@ -126,11 +126,7 @@ ontology.getAll = async function() {
   const ids = await ontologyContract.getAllIds();
   const credentialItems = await Promise.all(ids.map(id => ontologyContract.getById(id)));
 
-  return credentialItems.map(credentialItemRecord => {
-    const credentialItem = mapCredentialItemRecord(credentialItemRecord);
-    assertCredentialItem(credentialItem);
-    return credentialItem;
-  });
+  return credentialItems.map(mapCredentialItemRecord);
 };
 
 /**

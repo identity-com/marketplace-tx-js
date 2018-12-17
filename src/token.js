@@ -41,7 +41,7 @@ token.transfer = async function(fromAddress, signTx, to, value) {
   assertAddress(to);
 
   try {
-    return sender.send({
+    return await sender.send({
       fromAddress,
       signTx,
       contractName: CONTRACT_TOKEN,
@@ -62,7 +62,7 @@ token.approveWithReset = async function(fromAddress, signTx, spender, value) {
       // Non-zero allowance cannot be updated, so reset it to zero first.
       await approve(fromAddress, signTx, spender, 0);
     }
-    return approve(fromAddress, signTx, spender, value);
+    return await approve(fromAddress, signTx, spender, value);
   } catch (error) {
     logger.error(`Error approving token transfer: ${error.message}`);
     throw error;
@@ -74,9 +74,9 @@ token.allowance = async function(owner, spender) {
   return tokenContract.allowance(owner, spender);
 };
 
-token.approve = function(fromAddress, signTx, spender, value) {
+token.approve = async function(fromAddress, signTx, spender, value) {
   try {
-    return approve(fromAddress, signTx, spender, value);
+    return await approve(fromAddress, signTx, spender, value);
   } catch (error) {
     logger.error(`Error approving token transfer: ${error.message}`);
     throw error;

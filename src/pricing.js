@@ -95,11 +95,7 @@ pricing.getAllPrices = async function() {
   const ids = await pricingContract.getAllIds();
   const prices = await Promise.all(ids.map(id => pricingContract.getPriceById(id)));
 
-  return prices.map(priceRecord => {
-    const price = mapCredentialItemPrice(priceRecord);
-    assertPrice(price);
-    return price;
-  });
+  return prices.map(mapCredentialItemPrice);
 };
 
 /**
