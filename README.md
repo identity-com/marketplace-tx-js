@@ -35,8 +35,9 @@ const MarketplaceTx = require('marketplace-tx');
 ```
 
 #### Using in browser
-The library uses ES2017 features therefore it needs to be transpiled with Babel before it can be used in browser.
-Using Babel you need to add [babel-preset-env](https://babeljs.io/docs/en/env) preset to your `.babelrc` config.
+The library uses ES2017 features therefore it may need to be transpiled before it can be used in browser.
+If you are using Babel, you need to use the [env](https://babeljs.io/docs/en/env) preset (or similar).
+Add the correct preset to your `.babelrc` config.
 
 ```js
 {
