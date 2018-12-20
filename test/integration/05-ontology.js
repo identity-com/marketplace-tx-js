@@ -50,12 +50,13 @@ describe('Ontology', () => {
     it('can get all credential items', async () => {
       const proofOfIdentity = await ontology.getByTypeNameVersion(type, name, version);
       const proofOfAge = await ontology.getByTypeNameVersion('credential', 'proofOfAge', 'v1.0');
+      const proofOfResidence = await ontology.getByTypeNameVersion('credential', 'proofOfResidence', 'v1.0');
       const credentialItems = await ontology.getAll();
       expect(credentialItems)
         .to.be.an('array')
-        .with.lengthOf(2)
         .that.deep.includes(proofOfAge)
-        .and.includes(proofOfIdentity);
+        .and.includes(proofOfIdentity)
+        .and.includes(proofOfResidence);
     });
 
     describe('throws when not found', () => {

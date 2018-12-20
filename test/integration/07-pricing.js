@@ -70,9 +70,7 @@ describe('Pricing', () => {
       it('returns all prices', async () => {
         const pricedCredentialItems = [name, 'proofOfAge', ...newCredentialItemNames];
         const prices = await pricing.getAllPrices();
-        expect(prices)
-          .to.be.an('array')
-          .with.lengthOf(6);
+        expect(prices).to.be.an('array');
         expect(_.map(prices, 'credentialItem.name')).to.include.members(pricedCredentialItems);
         expect(_.map(prices, 'idv')).to.include.members([idv, testIdv]);
         expect(prices).to.have.nested.property('[0].deprecated', deprecated, 'Includes deprecated flag');

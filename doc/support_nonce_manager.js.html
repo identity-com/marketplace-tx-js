@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>support/asserts.js - Documentation</title>
+    <title>support/nonce/manager.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -31,7 +31,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">support/asserts.js</h1>
+    <h1 class="page-title">support/nonce/manager.js</h1>
     
 
     
@@ -41,86 +41,166 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/** @module support/asserts */
-const asserts = {};
-module.exports = asserts;
-
-const { TOTAL_SUPPLY, CREDENTIAL_ITEM_TYPES } = require('./constants');
+            <pre class="prettyprint source linenums"><code>const _ = require('lodash');
+const logger = require('../../logger');
+const { mapError } = require('../errors');
 
 /**
- * @alias module:support/asserts.assertAmount
- * @memberOf support/asserts
- * @description Asserts amount for sanity check.
- * @param {number} amount The escrow amount in creds.
- * @returns {number}
- */
-asserts.assertAmount = amount => {
-  if (amount &lt; 1 || amount > TOTAL_SUPPLY) {
-    throw new Error(`Amount ${amount} is out of range (1-${TOTAL_SUPPLY})`);
+ * @classdesc A service that dispenses nonces, resolving any nonce gaps and
+ * ensuring concurrent transactions do not result in nonce clashes.
+ * */
+class NonceManager {
+  constructor(web3, store) {
+    this.web3 = web3;
+    this.store = store;
   }
 
-  return amount;
-};
-
-/**
- * @alias module:support/asserts.assertCredentialItems
- * @memberOf support/asserts
- * @description Asserts credential items array is not empty.
- * @param {Array} credentialItems An array containing credential item IDs
- * @return {Array}
- */
-asserts.assertCredentialItems = credentialItems => {
-  if (!credentialItems || !credentialItems.length) {
-    throw new Error('Credential items must be non-empty array');
+  /**
+   * Returns current transaction count for specific address.
+   *
+   * NOTE: There are reports of incorrect behaviour of web3.eth.getTransactionCount
+   * which affects the count of pending transactions.
+   * https://github.com/ethereum/go-ethereum/issues/2880
+   * At this time we could only rely on the count of mined transactions.
+   *
+   * @param address The address to get the numbers of transactions from.
+   * @param defaultBlock The default block number to use when querying a state.
+   *   "earliest", the genesis block
+   *   "latest", the latest block (current head of the blockchain)
+   *   "pending", the currently mined block (including pending transactions)
+   * @returns {Promise&lt;number>}
+   */
+  async getTransactionCount(address, defaultBlock) {
+    return new Promise((resolve, reject) => {
+      this.web3.eth.getTransactionCount(address, defaultBlock, (error, txCount) => {
+        if (error) return reject(mapError(error));
+        return resolve(txCount);
+      });
+    });
   }
 
-  return credentialItems;
-};
-
-/**
- * @alias module:support/asserts.assertCredentialItemPrice
- * @memberOf support/asserts
- * @description Asserts that provided number matches valid price criteria.
- * @returns {number}
- * @param price
- */
-asserts.assertCredentialItemPrice = price => {
-  if (price &lt; 0 || price > TOTAL_SUPPLY) {
-    throw new Error(`Price ${price} is out of range (0-${TOTAL_SUPPLY})`);
+  /**
+   * Retrieves txpool content (pending and queued transactions) for specific address.
+   * @param address
+   * @returns {Promise&lt;any>}
+   */
+  async inspectTxPool(address) {
+    return new Promise((resolve, reject) => {
+      this.web3.txpool.inspect((error, result) => {
+        // handle cases where txpool.inspect is not available
+        // we just have to assume there is nothing queued in this case
+        if (error) {
+          if (error.message.includes('Method txpool_inspect not supported.')) {
+            return resolve({ pending: {}, queued: {} });
+          }
+          return reject(mapError(error));
+        }
+        return resolve({
+          pending: result.pending[address] || {},
+          queued: result.queued[address] || {}
+        });
+      });
+    });
   }
 
-  return price;
-};
+  /**
+   * Returns the next correct transaction nonce for address.
+   * @param address The address to get the nonce for.
+   * @returns {Promise&lt;number>}
+   */
+  async getNonceForAccount(address) {
+    logger.debug(`Requesting nonce for address ${address}`);
 
-/**
- * @alias module:support/asserts.assertAddress
- * @memberOf support/asserts
- * @description Checks if provided string is a valid ETH address.
- * @param {string} addressToTest
- * @returns {string}
- */
-asserts.assertAddress = addressToTest => {
-  if (!asserts.web3.isAddress(addressToTest)) {
-    throw new Error(`Address (${addressToTest}) is not a valid ETH address`);
+    // Retrieve stored nonces for the provided account.
+    let nonces = await this.store.get(address);
+    // Retrieve current transaction count and transaction pool state for the provided account.
+    const [txCount, { pending, queued }] = await Promise.all([
+      this.getTransactionCount(address),
+      this.inspectTxPool(address)
+    ]);
+
+    // Keep nonces which are not mined yet
+    // and release nonces which values are below the account tx count (i.e. lowest possible value).
+    nonces = _.pickBy(nonces, (value, nonce) => {
+      if (nonce >= txCount) return true;
+      logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
+      return false;
+    });
+
+    // Get all known transactions by combining local cache with data from tx pool.
+    const knownTransactions = _.assign({}, nonces, pending, queued);
+
+    // Get all used nonces.
+    const usedNonces = _.keys(knownTransactions);
+    if (usedNonces.length) {
+      logger.debug(`Account '${address}', used nonces: ${usedNonces.join(', ')}`);
+    }
+
+    // Calculate max used nonce.
+    const maxUsedNonce = usedNonces.reduce((a, b) => Math.max(a, b), txCount);
+
+    // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
+    let nextNonce = txCount;
+    while (nextNonce &lt;= maxUsedNonce) {
+      // Stop at the first non-used nonce (i.e. first gap).
+      if (!(nextNonce in knownTransactions)) break;
+      // Increment nonce. If no gaps found, return the value next after max used nonce.
+      nextNonce += 1;
+    }
+
+    nonces[nextNonce] = true;
+    await this.store.put(address, nonces);
+    logger.debug(`Account '${address}', nonce acquired: ${nextNonce}`);
+
+    return nextNonce;
   }
 
-  return addressToTest;
-};
-
-/**
- * @alias module:support/asserts.assertCredentialItemType
- * @memberOf support/asserts
- * @description Allows only certain credential item types
- * @param {string} type
- * @return {string}
- */
-asserts.assertCredentialItemType = type => {
-  if (!CREDENTIAL_ITEM_TYPES.includes(type)) {
-    throw new Error(`Credential item type '${type}' is not supported`);
+  /**
+   * Releases a specific nonce and returns it back to the pool, so that it can be used for other transaction.
+   * @param address
+   * @param nonce
+   * @returns {Promise&lt;void>}
+   */
+  async releaseAccountNonce(address, nonce) {
+    const storedNonces = await this.store.get(address);
+    if (_.isObject(storedNonces)) {
+      delete storedNonces[Number(nonce)];
+      await this.store.put(address, storedNonces);
+    }
+    logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
   }
 
-  return type;
-};
+  /**
+   * Releases multiple nonces at once and returns them back to the pool,
+   * so that they can be used for other transactions.
+   * @param address
+   * @param nonces
+   * @returns {Promise&lt;void>}
+   */
+  async releaseAccountNonces(address, nonces) {
+    if (_.isEmpty(nonces)) return;
+
+    const storedNonces = await this.store.get(address);
+    if (_.isObject(storedNonces)) {
+      nonces.forEach(nonce => delete storedNonces[Number(nonce)]);
+      await this.store.put(address, storedNonces);
+    }
+    nonces.forEach(nonce => logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`));
+  }
+
+  /**
+   * Clears stored nonce data of all accounts.
+   * @returns {Promise&lt;void>}
+   */
+  async clearAccounts() {
+    logger.debug(`Clearing nonce store...`);
+    const addresses = await this.store.keys();
+    await this.store.clear();
+    addresses.forEach(address => logger.debug(`Account '${address}' nonce cache cleared`));
+  }
+}
+
+module.exports = NonceManager;
 </code></pre>
         </article>
     </section>

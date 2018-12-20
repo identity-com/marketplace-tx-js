@@ -1,45 +1,48 @@
 const transactionDetails = {};
 module.exports = transactionDetails;
 
-const util = require('ethereumjs-util');
+const util = require('util');
+// This shim is necessary so that marketplaceTx can be imported in the browser
+// See https://github.com/serverless-heaven/serverless-webpack/issues/291#issuecomment-348790713
+// See https://github.com/alexjlockwood/avocado/commit/7455bea1052c4d271fe0e6db59f3fb3efdd0349d
+require('util.promisify').shim();
+const ethUtil = require('ethereumjs-util');
 const _ = require('lodash');
 const { TX_STATUS } = require('./constants');
 const tx = require('./tx');
 
 const txPoolStatuses = [TX_STATUS.PENDING, TX_STATUS.QUEUED];
-
 const formatResult = (status, details) => ({ status, details });
+
 /**
  * Get transaction details from either txPool.content or getTransactionReceipt
  * @param {string} fromAddress - The address of the sender.
  * @param txHash
  * @returns {Promise<object>}
  */
-transactionDetails.getTransaction = function(fromAddress, txHash) {
-  return new Promise((resolve, reject) =>
-    tx.getTransactionReceipt(txHash).then(receipt => {
-      if (receipt) {
-        // The transaction hash was found via getTransactionReceipt and therefore has been mined
-        resolve(formatResult(TX_STATUS.MINED, receipt));
-      } else {
-        // Otherwise check the txPool
-        tx.web3.txpool.content((error, result) => {
-          if (error) {
-            if (error.message.includes('Method txpool_content not supported.')) {
-              return resolve(formatResult(TX_STATUS.UNSUPPORTED, null));
-            }
-            return reject(error);
-          }
-          // Convert the fromAddress to the correct casing in order to find it by key notation
-          const checksumFromAddress = util.toChecksumAddress(fromAddress);
+transactionDetails.getTransaction = async function(fromAddress, txHash) {
+  const receipt = await tx.getTransactionReceipt(txHash);
+  if (receipt) {
+    // The transaction hash was found via getTransactionReceipt and therefore has been mined
+    return formatResult(TX_STATUS.MINED, receipt);
+  }
 
-          const foundTransaction = searchTxPoolContentResult(result, checksumFromAddress, txHash);
+  // Otherwise check the txPool
+  const txPoolContentPromise = util.promisify(cb => tx.web3.txpool.content(cb));
 
-          return resolve(foundTransaction || formatResult(TX_STATUS.UNKNOWN, null));
-        });
-      }
-    })
-  );
+  try {
+    const result = await txPoolContentPromise();
+    // Convert the fromAddress to the correct casing in order to find it by key notation
+    const checksumFromAddress = ethUtil.toChecksumAddress(fromAddress);
+    const foundTransaction = searchTxPoolContentResult(result, checksumFromAddress, txHash);
+
+    return foundTransaction || formatResult(TX_STATUS.UNKNOWN, null);
+  } catch (error) {
+    if (error.message.includes('Method txpool_content not supported.')) {
+      return formatResult(TX_STATUS.UNSUPPORTED, null);
+    }
+    throw error;
+  }
 };
 
 /**
@@ -48,36 +51,32 @@ transactionDetails.getTransaction = function(fromAddress, txHash) {
  * @param nonce
  * @returns {Promise<string>}
  */
-transactionDetails.getTransactionStatus = function(fromAddress, nonce) {
-  return new Promise((resolve, reject) => {
-    tx.web3.txpool.inspect((error, result) => {
-      if (error) {
-        if (error.message.includes('Method txpool_inspect not supported.')) {
-          return resolve(TX_STATUS.UNSUPPORTED);
-        }
-        return reject(error);
-      }
+// eslint-disable-next-line consistent-return
+transactionDetails.getTransactionStatus = async function(fromAddress, nonce) {
+  const txPoolInspectPromise = util.promisify(cb => tx.web3.txpool.inspect(cb));
 
-      // Convert the fromAddress to the correct casing in order to find it by key notation
-      const checksumFromAddress = util.toChecksumAddress(fromAddress);
+  try {
+    const result = await txPoolInspectPromise();
+    // Convert the fromAddress to the correct casing in order to find it by key notation
+    const checksumFromAddress = ethUtil.toChecksumAddress(fromAddress);
 
-      // Find the status which contains the transaction, otherwise default to Unknown
-      const transactionPoolStatus = getTransactionPoolStatus(result, checksumFromAddress, nonce);
+    // Find the status which contains the transaction, otherwise default to Unknown
+    const transactionPoolStatus = getTransactionPoolStatus(result, checksumFromAddress, nonce);
 
-      // If the transaction was found in the txPool, resolve with corresponding status
-      if (transactionPoolStatus !== TX_STATUS.UNKNOWN) {
-        return resolve(transactionPoolStatus);
-      }
+    // If the transaction was found in the txPool, resolve with corresponding status
+    if (transactionPoolStatus !== TX_STATUS.UNKNOWN) {
+      return transactionPoolStatus;
+    }
 
-      // getTransactionCount could include a pending transaction, so we assert this after checking the txPool
-      return tx.getTransactionCount(fromAddress).then(txCount => {
-        if (nonce < txCount) {
-          return resolve(TX_STATUS.MINED);
-        }
-        return resolve(TX_STATUS.UNKNOWN);
-      });
-    });
-  });
+    // getTransactionCount could include a pending transaction, so we assert this after checking the txPool
+    const txCount = await tx.getTransactionCount(fromAddress);
+    return nonce < txCount ? TX_STATUS.MINED : TX_STATUS.UNKNOWN;
+  } catch (error) {
+    if (error.message.includes('Method txpool_inspect not supported.')) {
+      return TX_STATUS.UNSUPPORTED;
+    }
+    throw error;
+  }
 };
 
 /**

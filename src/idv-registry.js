@@ -16,15 +16,25 @@ const { CONTRACT_VALIDATOR_REGISTRY } = require('./support/constants');
 const IDV_REGISTRY_SET_GAS_LIMIT = 250000;
 
 /**
+ * Converts an array returned from web3 to a IDV data object.
+ * @param name
+ * @param description
+ * @returns {{name: *, description: *}}
+ */
+const mapIdvRegistryRecord = ([name, description]) => ({
+  name,
+  description
+});
+
+/**
+ * Verifies
  * @param record
  * @return {*}
  */
-const assertNotEmpty = record => {
-  if (record[0] === '') {
-    throw new Error('Idv record does not exist');
+const assertIdvRegistryRecord = record => {
+  if (record.name === '') {
+    throw new Error('IDV record does not exist');
   }
-
-  return record;
 };
 
 /**
@@ -65,13 +75,13 @@ idvRegistry.set = function(fromAddress, signTx, idvAddress, idvName, idvDescript
  * @param {string} idvAddress - The identity validator address.
  * @returns {Promise<{name: string, description: string}>} - A promise of the identity validator details.
  */
-idvRegistry.get = function(idvAddress) {
+idvRegistry.get = async function(idvAddress) {
   assertAddress(idvAddress);
-  return tx
-    .contractInstance(CONTRACT_VALIDATOR_REGISTRY)
-    .then(instance => instance.get(idvAddress))
-    .then(assertNotEmpty)
-    .then(([name, description]) => ({ address: idvAddress, name, description }));
+  const idvRegistryContract = await tx.contractInstance(CONTRACT_VALIDATOR_REGISTRY);
+  const idvRegistryRecord = mapIdvRegistryRecord(await idvRegistryContract.get(idvAddress));
+  assertIdvRegistryRecord(idvRegistryRecord);
+
+  return { address: idvAddress, ...idvRegistryRecord };
 };
 
 /**
@@ -81,7 +91,9 @@ idvRegistry.get = function(idvAddress) {
  * @param {string} idvAddress - The identity validator address.
  * @returns {Promise<boolean>} - A promise of identity validator status.
  */
-idvRegistry.exists = function(idvAddress) {
+idvRegistry.exists = async function(idvAddress) {
   assertAddress(idvAddress);
-  return tx.contractInstance(CONTRACT_VALIDATOR_REGISTRY).then(instance => instance.exists(idvAddress));
+  const idvRegistryContract = await tx.contractInstance(CONTRACT_VALIDATOR_REGISTRY);
+
+  return idvRegistryContract.exists(idvAddress);
 };

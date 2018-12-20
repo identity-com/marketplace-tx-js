@@ -34,14 +34,61 @@ Integrate with your application using:
 const MarketplaceTx = require('marketplace-tx');
 ```
 
+#### Using in browser
+The library uses ES2017 features therefore it may need to be transpiled before it can be used in browser.
+If you are using Babel, you need to use the [env](https://babeljs.io/docs/en/env) preset (or similar).
+Add the correct preset to your `.babelrc` config.
+
+```js
+{
+  "presets": ["env"]
+}
+```
+
+#### Using in React app
+In order to integrate the MarketplaceTx into your React application you might use [react-app-rewired](https://github.com/timarney/react-app-rewired) library.
+It allows to tweak the create-react-app webpack config without using 'eject' and without creating a fork of the react-scripts.
+
+First add the correct presets to your `.baberc` config.
+
+```js
+{
+  "presets": ["env", "react"]
+}
+```
+
+Then add the `config-overrides.js` file and tweak the Babel loader as following:
+
+```js
+const path = require('path');
+const fs = require('fs');
+const rewireBabelLoader = require('react-app-rewire-babel-loader');
+const { getBabelLoader } = require('react-app-rewired');
+const appDirectory = fs.realpathSync(process.cwd());
+const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+module.exports = function override(config, env) {
+  // Make Babel loader read the configuration from .babelrc file.
+  const babelLoader = getBabelLoader(config.module.rules);
+  babelLoader.options.babelrc = true;
+  
+  config = rewireBabelLoader.include(
+    config,
+    resolveApp('node_modules/marketplace-tx')
+  );
+
+  return config;
+};
+```
+
 ### Use with Infura
 
 MarketplaceTx is currently *not* compatible with Infura, as it requires access to the `txpool`
-Ethereum RPC API for nonce management. 
+Ethereum RPC API for nonce management.
 
 ### Asynchronous calls
 
-The library returns a `Promise` on any async call. Use `async/await` or `.then().catch()` according to your environment.  
+The library returns a `Promise` on any async call. Use `async/await` or `.then().catch()` according to your environment.
 
 ### Initialising
 

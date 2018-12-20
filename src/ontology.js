@@ -58,15 +58,13 @@ const mapCredentialItemRecord = ([id, type, name, version, reference, referenceT
 });
 
 /**
- * @param {Array} record - A credential item in Array form (retrieved from Web3)
+ * @param {CredentialItem} credentialItem - Credential item object
  * @return {Array}
  */
-const assertNotEmpty = record => {
-  if (record[0].match(/0x0{64}/)) {
+const assertCredentialItem = credentialItem => {
+  if (credentialItem.id.match(/0x0{64}/)) {
     throw new NotFoundError('Credential item does not exist');
   }
-
-  return record;
 };
 
 /**
@@ -77,12 +75,12 @@ const assertNotEmpty = record => {
  * @param {string} id - see {@link CredentialItem}.id
  * @return {Promise<CredentialItem>}
  */
-ontology.getById = function(id) {
-  return tx
-    .contractInstance(CONTRACT_ONTOLOGY)
-    .then(instance => instance.getById(id))
-    .then(assertNotEmpty)
-    .then(mapCredentialItemRecord);
+ontology.getById = async function(id) {
+  const ontologyContract = await tx.contractInstance(CONTRACT_ONTOLOGY);
+  const credentialItem = mapCredentialItemRecord(await ontologyContract.getById(id));
+  assertCredentialItem(credentialItem);
+
+  return credentialItem;
 };
 
 /**
@@ -95,12 +93,12 @@ ontology.getById = function(id) {
  * @param {string} version see {@link CredentialItem}.version
  * @return {Promise<CredentialItem>}
  */
-ontology.getByTypeNameVersion = function(type, name, version) {
-  return tx
-    .contractInstance(CONTRACT_ONTOLOGY)
-    .then(instance => instance.getByTypeNameVersion(type, name, version))
-    .then(assertNotEmpty)
-    .then(mapCredentialItemRecord);
+ontology.getByTypeNameVersion = async function(type, name, version) {
+  const ontologyContract = await tx.contractInstance(CONTRACT_ONTOLOGY);
+  const credentialItem = mapCredentialItemRecord(await ontologyContract.getByTypeNameVersion(type, name, version));
+  assertCredentialItem(credentialItem);
+
+  return credentialItem;
 };
 
 /**
@@ -113,26 +111,22 @@ ontology.getByTypeNameVersion = function(type, name, version) {
  * @param {string} version see {@link CredentialItem}.version
  * @return {Promise<String>}
  */
-ontology.getIdByTypeNameVersion = function(type, name, version) {
-  return tx
-    .contractInstance(CONTRACT_ONTOLOGY)
-    .then(instance => instance.getByTypeNameVersion(type, name, version))
-    .then(assertNotEmpty)
-    .then(record => record[0]);
+ontology.getIdByTypeNameVersion = async function(type, name, version) {
+  return (await ontology.getByTypeNameVersion(type, name, version)).id;
 };
 
 /**
  * @alias module:ontology.getAll
  * @memberOf ontology
  * @description Returns all credential items, 2-dimensional array
- * @return {Promise<Array>}
+ * @return {Promise<CredentialItem[]>}
  */
-ontology.getAll = function() {
-  return tx
-    .contractInstance(CONTRACT_ONTOLOGY)
-    .then(instance =>
-      instance.getAllIds().then(ids => Promise.all(ids.map(id => instance.getById(id).then(mapCredentialItemRecord))))
-    );
+ontology.getAll = async function() {
+  const ontologyContract = await tx.contractInstance(CONTRACT_ONTOLOGY);
+  const ids = await ontologyContract.getAllIds();
+  const credentialItems = await Promise.all(ids.map(id => ontologyContract.getById(id)));
+
+  return credentialItems.map(mapCredentialItemRecord);
 };
 
 /**
@@ -148,27 +142,24 @@ ontology.getAll = function() {
  * @param {string} reference - see {@link CredentialItem}.reference
  * @param {string} referenceType - see {@link CredentialItem}.referenceType
  * @param {string} referenceHash - see {@link CredentialItem}.referenceHash
- * @return {Promise}
+ * @returns {Promise<{transactionHash}>}
  */
-ontology.add = function(fromAddress, signTx, type, name, version, reference, referenceType, referenceHash) {
-  try {
-    assertAddress(fromAddress);
-    const args = [assertCredentialItemType(type), name, version, reference, referenceType, referenceHash];
-    args.forEach(arg => {
-      if (!arg || typeof arg !== 'string' || arg.length === 0) {
-        throw new Error(`Empty argument passed to Ontology.add (${JSON.stringify(args)})`);
-      }
-    });
-    return sender.send({
-      fromAddress,
-      signTx,
-      contractName: CONTRACT_ONTOLOGY,
-      method: 'add',
-      params: args
-    });
-  } catch (e) {
-    return Promise.reject(e);
-  }
+ontology.add = async function(fromAddress, signTx, type, name, version, reference, referenceType, referenceHash) {
+  assertAddress(fromAddress);
+  const args = [assertCredentialItemType(type), name, version, reference, referenceType, referenceHash];
+  args.forEach(arg => {
+    if (!arg || typeof arg !== 'string' || arg.length === 0) {
+      throw new Error(`Empty argument passed to Ontology.add (${JSON.stringify(args)})`);
+    }
+  });
+
+  return sender.send({
+    fromAddress,
+    signTx,
+    contractName: CONTRACT_ONTOLOGY,
+    method: 'add',
+    params: args
+  });
 };
 
 /**
@@ -181,22 +172,18 @@ ontology.add = function(fromAddress, signTx, type, name, version, reference, ref
  * @param {string} type - see {@link CredentialItem}.type
  * @param {string} name - see {@link CredentialItem}.name
  * @param {string} version - see {@link CredentialItem}.version
- * @return {Promise<String>} Tx hash
+ * @returns {Promise<{transactionHash}>}
  */
 ontology.deprecate = function(fromAddress, signTx, type, name, version) {
-  try {
-    assertAddress(fromAddress);
-    const args = [assertCredentialItemType(type), name, version];
-    return sender.send({
-      fromAddress,
-      signTx,
-      contractName: CONTRACT_ONTOLOGY,
-      method: 'deprecate',
-      params: args
-    });
-  } catch (e) {
-    return Promise.reject(e);
-  }
+  assertAddress(fromAddress);
+  const args = [assertCredentialItemType(type), name, version];
+  return sender.send({
+    fromAddress,
+    signTx,
+    contractName: CONTRACT_ONTOLOGY,
+    method: 'deprecate',
+    params: args
+  });
 };
 
 /**
@@ -206,21 +193,17 @@ ontology.deprecate = function(fromAddress, signTx, type, name, version) {
  * @param {string} fromAddress - The address of the sender.
  * @param {function} signTx - The callback to use to sign the transaction
  * @param internalId
- * @return {Promise<String>} Tx hash
+ * @returns {Promise<{transactionHash}>}
  */
 ontology.deprecateById = function(fromAddress, signTx, internalId) {
-  try {
-    assertAddress(fromAddress);
-    return sender.send({
-      fromAddress,
-      signTx,
-      contractName: CONTRACT_ONTOLOGY,
-      method: 'deprecateById',
-      params: [internalId]
-    });
-  } catch (e) {
-    return Promise.reject(e);
-  }
+  assertAddress(fromAddress);
+  return sender.send({
+    fromAddress,
+    signTx,
+    contractName: CONTRACT_ONTOLOGY,
+    method: 'deprecateById',
+    params: [internalId]
+  });
 };
 
 /**
