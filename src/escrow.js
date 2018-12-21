@@ -151,20 +151,17 @@ const createEscrowPlaceTransactions = (
  * @param {Array<string>} scopeRequestIds - An array of scope request identifiers.
  * @returns {object} A promise of transaction hash (see tx.js module) and returnValue object with placementId.
  */
-function addPlacementReturnValue(transactionReceipt, fromAddress, idvAddress, scopeRequestIds) {
-  if (_.isEmpty(scopeRequestIds)) {
-    return {
-      returnValue: {},
-      ...transactionReceipt
-    };
+async function addPlacementReturnValue(transactionReceipt, fromAddress, idvAddress, scopeRequestIds) {
+  const response = {
+    returnValue: {},
+    ...transactionReceipt
+  };
+
+  if (!_.isEmpty(scopeRequestIds)) {
+    response.returnValue.placementId = await escrow.calculatePlacementId(fromAddress, idvAddress, scopeRequestIds);
   }
 
-  return escrow.calculatePlacementId(fromAddress, idvAddress, scopeRequestIds).then(placementId => ({
-    returnValue: {
-      placementId
-    },
-    ...transactionReceipt
-  }));
+  return response;
 }
 
 /**
@@ -183,8 +180,8 @@ function addPlacementReturnValue(transactionReceipt, fromAddress, idvAddress, sc
  * @param {number} [txOptions.gasPrice] - The gas price value provided by the sender in Wei.
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
  * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for transaction receipt before raising an error.
- * @returns {Promise<Array<object>>} An promise of an array of objects containing
- * transaction hash (see tx.js module) and returnValue object with placementId.
+ * @returns {Promise<object>} A promise of the transaction hash (see tx.js module)
+ * and returnValue object with placementId.
  */
 escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount, credentialItems, txOptions = {}) {
   return escrow.placeBatch(fromAddress, signTx, idvAddress, [scopeRequestId], amount, credentialItems, txOptions);
@@ -208,10 +205,10 @@ escrow.place = function(fromAddress, signTx, idvAddress, scopeRequestId, amount,
  * @param {number} [txOptions.chainId] - The network chain id according to EIP-155.
  * @param {number} [txOptions.waitForMineTimeout] - Max time to wait for
  * transaction receipt before raising an error.
- * @returns {Promise<Array<object>>} An promise of an array of objects
- * containing transaction hash (see tx.js module) and returnValue object with placementId.
+ * @returns {Promise<object>} A promise of the transaction hash (see tx.js module)
+ * and returnValue object with placementId.
  */
-escrow.placeBatch = function(
+escrow.placeBatch = async function(
   fromAddress,
   signTx,
   idvAddress,
@@ -226,7 +223,7 @@ escrow.placeBatch = function(
   assertCredentialItems(credentialItems);
 
   // Merge txOptions
-  const updatedTxOptions = _.merge({}, { gas: PLACE_GAS_LIMIT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { gas: PLACE_GAS_LIMIT });
 
   // Logging
   const normalizedIds = scopeRequestIds.map(normalizeScopeRequestId);
@@ -240,30 +237,39 @@ escrow.placeBatch = function(
     txOptions: updatedTxOptions
   });
 
-  return Promise.all([
-    tx.contractInstances(CONTRACT_TOKEN, CONTRACT_ESCROW),
-    Promise.all(credentialItems.map(ontology.parseExternalId).map(args => ontology.getIdByTypeNameVersion(...args)))
-  ])
-    .then(([contracts, internalIds]) =>
-      createEscrowPlaceTransactions(contracts, fromAddress, idvAddress, normalizedIds, amount, internalIds)
-    )
-    .then(transactions => {
-      if (transactions && transactions.length > 1) {
-        logger.debug('More than one transaction batched during escrow place ', {
-          fromAddress,
-          idvAddress,
-          transactions,
-          scopeRequestIds
-        });
-      }
-      return sender.sendChain({
-        fromAddress,
-        signTx,
-        transactions,
-        txOptions: updatedTxOptions
-      });
-    })
-    .then(receipt => addPlacementReturnValue(receipt, fromAddress, idvAddress, scopeRequestIds));
+  // Prepare contract and credential item IDs promises to resolve them in parallel.
+  const contractsPromise = tx.contractInstances(CONTRACT_TOKEN, CONTRACT_ESCROW);
+  const internalIdsPromise = Promise.all(
+    credentialItems.map(ontology.parseExternalId).map(args => ontology.getIdByTypeNameVersion(...args))
+  );
+
+  const [contracts, internalIds] = await Promise.all([contractsPromise, internalIdsPromise]);
+  const transactions = await createEscrowPlaceTransactions(
+    contracts,
+    fromAddress,
+    idvAddress,
+    normalizedIds,
+    amount,
+    internalIds
+  );
+
+  if (transactions && transactions.length > 1) {
+    logger.debug('More than one transaction batched during escrow place ', {
+      fromAddress,
+      idvAddress,
+      transactions,
+      scopeRequestIds
+    });
+  }
+
+  const receipt = await sender.sendChain({
+    fromAddress,
+    signTx,
+    transactions,
+    txOptions: updatedTxOptions
+  });
+
+  return addPlacementReturnValue(receipt, fromAddress, idvAddress, scopeRequestIds);
 };
 
 /**
@@ -272,7 +278,7 @@ escrow.placeBatch = function(
  * @description Releases placed CVC tokens from escrow contract.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {string} scopeRequestId - Scope request identifier.
  * @param {object} txOptions - transaction options.
@@ -295,7 +301,7 @@ escrow.release = function(fromAddress, signTx, idrAddress, idvAddress, scopeRequ
  * Also allows partial release by providing the list of scope request IDs which should be kept in escrow.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {Array} scopeRequestIdsToRelease - An array of scope request IDs which will be released.
  * @param {Array} scopeRequestIdsToKeep - An array of scope request IDs which will be kept in escrow.
@@ -307,7 +313,7 @@ escrow.release = function(fromAddress, signTx, idrAddress, idvAddress, scopeRequ
  * @returns {Promise<object>} A promise of the transaction hash (see tx.js module)
  * and returnValue object with placementId.
  */
-escrow.releaseBatch = function(
+escrow.releaseBatch = async function(
   fromAddress,
   signTx,
   idrAddress,
@@ -316,13 +322,15 @@ escrow.releaseBatch = function(
   scopeRequestIdsToKeep,
   txOptions = {}
 ) {
+  assertAddress(fromAddress);
+  assertAddress(idrAddress);
+  assertAddress(idvAddress);
+
   // Merge txOptions
   // gas limit has to be adjusted in case of partial release, as it issues a new placement on the blockchain
-  const updatedTxOptions = _.merge(
-    {},
-    { gas: scopeRequestIdsToKeep.length ? RELEASE_GAS_LIMIT + PLACE_GAS_LIMIT : RELEASE_GAS_LIMIT },
-    txOptions
-  );
+  const updatedTxOptions = _.defaults({}, txOptions, {
+    gas: scopeRequestIdsToKeep.length ? RELEASE_GAS_LIMIT + PLACE_GAS_LIMIT : RELEASE_GAS_LIMIT
+  });
 
   const normalizedScopeRequestIdsToRelease = scopeRequestIdsToRelease.map(normalizeScopeRequestId);
   const normalizedScopeRequestIdsToKeep = scopeRequestIdsToKeep.map(normalizeScopeRequestId);
@@ -337,21 +345,16 @@ escrow.releaseBatch = function(
     txOptions: updatedTxOptions
   });
 
-  return sender
-    .send({
-      fromAddress: assertAddress(fromAddress),
-      signTx,
-      contractName: 'CvcEscrow',
-      method: 'releaseBatch',
-      params: [
-        assertAddress(idrAddress),
-        assertAddress(idvAddress),
-        normalizedScopeRequestIdsToRelease,
-        normalizedScopeRequestIdsToKeep
-      ],
-      txOptions: updatedTxOptions
-    })
-    .then(receipt => addPlacementReturnValue(receipt, idrAddress, idvAddress, normalizedScopeRequestIdsToKeep));
+  const receipt = await sender.send({
+    fromAddress,
+    signTx,
+    contractName: 'CvcEscrow',
+    method: 'releaseBatch',
+    params: [idrAddress, idvAddress, normalizedScopeRequestIdsToRelease, normalizedScopeRequestIdsToKeep],
+    txOptions: updatedTxOptions
+  });
+
+  return addPlacementReturnValue(receipt, idrAddress, idvAddress, normalizedScopeRequestIdsToKeep);
 };
 
 /**
@@ -359,7 +362,7 @@ escrow.releaseBatch = function(
  * @memberOf escrow
  * @description Verifies escrow placement state.
  * This is read-only method and doesn't involve transaction mining.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {string} scopeRequestId - Scope request identifier.
  * @returns {PlacementDetails} A promise of the escrow placement details.
@@ -373,31 +376,28 @@ escrow.verify = function(idrAddress, idvAddress, scopeRequestId) {
  * @memberOf escrow
  * @description Verifies state of the batched escrow placement.
  * This is read-only method and doesn't involve transaction mining.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {Array<string>} scopeRequestIds - An array of scope request identifiers.
  * @returns {PlacementDetails} A promise of the escrow placement details.
  */
-escrow.verifyBatch = function(idrAddress, idvAddress, scopeRequestIds) {
+escrow.verifyBatch = async function(idrAddress, idvAddress, scopeRequestIds) {
   assertAddress(idrAddress);
   assertAddress(idvAddress);
-  const normalizedIds = scopeRequestIds.map(normalizeScopeRequestId);
 
-  return tx
-    .contractInstance(CONTRACT_ESCROW)
-    .then(
-      logger.debugLogTap('Verifying escrow payment: ', {
-        idrAddress,
-        idvAddress,
-        scopeRequestIds,
-        normalizedIds
-      })
-    )
-    .then(escrowContract => escrowContract.verifyBatch(idrAddress, idvAddress, normalizedIds))
-    .then(verification => {
-      logger.debug('Escrow payment verified: ', normalizeVerify(verification));
-      return verification;
-    });
+  const normalizedIds = scopeRequestIds.map(normalizeScopeRequestId);
+  const escrowContract = await tx.contractInstance(CONTRACT_ESCROW);
+  logger.debug('Verifying escrow payment: ', {
+    idrAddress,
+    idvAddress,
+    scopeRequestIds,
+    normalizedIds
+  });
+
+  const verification = await escrowContract.verifyBatch(idrAddress, idvAddress, normalizedIds);
+  logger.debug('Escrow payment verified: ', mapVerifyResult(verification));
+
+  return verification;
 };
 
 /**
@@ -408,11 +408,11 @@ escrow.verifyBatch = function(idrAddress, idvAddress, scopeRequestIds) {
  * @param {string} placementId - The escrow placement ID.
  * @returns {PlacementDetails} - A promise of the escrow placement details.
  */
-escrow.verifyPlacement = function(placementId) {
-  return tx
-    .contractInstance(CONTRACT_ESCROW)
-    .then(logger.debugLogTap('Verifying placement: ', { placementId }))
-    .then(escrowContract => escrowContract.verifyPlacement(placementId));
+escrow.verifyPlacement = async function(placementId) {
+  const escrowContract = await tx.contractInstance(CONTRACT_ESCROW);
+  logger.debug(`Verifying placement: ${placementId}`);
+
+  return escrowContract.verifyPlacement(placementId);
 };
 
 /**
@@ -421,7 +421,7 @@ escrow.verifyPlacement = function(placementId) {
  * @description Refunds escrowed funds to identity requester account.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {string} scopeRequestId - Scope request identifier.
  * @param {object} txOptions - transaction options.
@@ -443,7 +443,7 @@ escrow.refund = function(fromAddress, signTx, idrAddress, idvAddress, scopeReque
  * Allows the batching of scope request IDs to reduce transaction costs.
  * @param {string} fromAddress - The transaction sender address.
  * @param {function} signTx - Transaction signing function.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {Array<string>} scopeRequestIds - An array containing scope request identifiers.
  * @param {object} txOptions - transaction options.
@@ -456,7 +456,7 @@ escrow.refund = function(fromAddress, signTx, idrAddress, idvAddress, scopeReque
  */
 escrow.refundBatch = function(fromAddress, signTx, idrAddress, idvAddress, scopeRequestIds, txOptions = {}) {
   // Merge txOptions with default
-  const updatedTxOptions = _.merge({}, { gas: REFUND_GAS_LIMIT }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { gas: REFUND_GAS_LIMIT });
   const normalizedIds = scopeRequestIds.map(normalizeScopeRequestId);
 
   logger.debug('Refunding escrow', {
@@ -542,16 +542,15 @@ escrow.setFeeRate = function(fromAddress, signTx, feeRate) {
  * @memberOf escrow
  * @description Calculates escrow placement ID from a set of scope request IDs. This
  * allows a client to identify the batch that an array of scope requests was added to.
- * @param {string} idrAddress - The identity requestor address.
+ * @param {string} idrAddress - The identity requester address.
  * @param {string} idvAddress - The identity validator address.
  * @param {Array<string>} scopeRequestIds - An array of scope request identifiers.
  * @return {string} A promise of the escrow placement ID.
  */
-escrow.calculatePlacementId = function(idrAddress, idvAddress, scopeRequestIds) {
-  return tx
-    .contractInstance(CONTRACT_ESCROW)
-    .then(logger.debugLogTap('Calculating placementId: ', { idrAddress, idvAddress, scopeRequestIds }))
-    .then(escrowContract => escrowContract.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds));
+escrow.calculatePlacementId = async function(idrAddress, idvAddress, scopeRequestIds) {
+  const escrowContract = await tx.contractInstance(CONTRACT_ESCROW);
+  logger.debug('Calculating placementId: ', { idrAddress, idvAddress, scopeRequestIds });
+  return escrowContract.calculatePlacementId(idrAddress, idvAddress, scopeRequestIds);
 };
 
 function toPaymentState(number) {
@@ -559,9 +558,7 @@ function toPaymentState(number) {
   return ['Empty', 'Placed', 'Released', 'Canceled'][number];
 }
 
-function normalizeVerify(verifyResultArray) {
-  const [amount, paymentState, credentialItems, confirmationsNumber, canRefund] = verifyResultArray;
-
+function mapVerifyResult([amount, paymentState, credentialItems, confirmationsNumber, canRefund]) {
   return {
     amount: toCVC(amount).toFixed(CVC_DECIMALS),
     paymentState: toPaymentState(paymentState.toNumber()),

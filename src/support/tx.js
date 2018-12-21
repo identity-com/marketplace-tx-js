@@ -42,6 +42,11 @@ module.exports = tx;
  * @property {string} [chainId] - The network chain id according to EIP-155.
  */
 
+const util = require('util');
+// This shim is necessary so that marketplaceTx can be imported in the browser
+// See https://github.com/serverless-heaven/serverless-webpack/issues/291#issuecomment-348790713
+// See https://github.com/alexjlockwood/avocado/commit/7455bea1052c4d271fe0e6db59f3fb3efdd0349d
+require('util.promisify').shim();
 const path = require('path');
 const truffleContract = require('truffle-contract');
 const _ = require('lodash');
@@ -62,23 +67,19 @@ const TX_GAS_LIMIT = process.env.GAS || config.gas || 300000;
 const TX_MINING_TIMEOUT = process.env.TX_MINING_TIMEOUT || config.txMiningTimeout || 120;
 
 /**
- * Checks the contract's address and verify deployed code property is not empty.
- * @param {object} deployedContract Truffle contract.
- * @returns {Promise<object|NotDeployedError>} A promise of deployed contract or error.
+ * Checks the contract's address and verify deployed code property is not
+ * empty.
+ * @param contractAddress
+ * @returns {Promise<void>}
  */
-const assertCodeAtAddress = deployedContract =>
-  new Promise((resolve, reject) => {
-    tx.web3.eth.getCode(deployedContract.address, (error, code) => {
-      if (error) reject(error);
-
-      // this caters for the cases where code = "0x", "0x0" or ""
-      if (parseInt(code + 0, 16) === 0) {
-        reject(new NotDeployedError(deployedContract.address));
-      }
-
-      resolve(deployedContract);
-    });
-  });
+const assertCodeAtAddress = async contractAddress => {
+  const getCodePromise = util.promisify(cb => tx.web3.eth.getCode(contractAddress, cb));
+  const code = await getCodePromise();
+  // this caters for the cases where code = "0x", "0x0" or ""
+  if (parseInt(code + 0, 16) === 0) {
+    throw new NotDeployedError(contractAddress);
+  }
+};
 
 /**
  * Returns the contract instance deployed to current network.
@@ -87,14 +88,14 @@ const assertCodeAtAddress = deployedContract =>
  * @returns {Promise<object>} The contract object.
  * @throws NoNetworkInContractError
  */
-const fallbackToAutodetectDeployedContract = (contract, contractName) =>
+const detectDeployedContract = (contract, contractName) =>
   contract
     .deployed()
     .catch(error => {
       logger.debug('Current network not found in truffle-contract json');
       throw new NoNetworkInContractError(contractName, error);
     })
-    .then(assertCodeAtAddress);
+    .then(deployedContract => assertCodeAtAddress(deployedContract.address).then(() => deployedContract));
 
 /**
  * Returns the contract artifact
@@ -102,18 +103,15 @@ const fallbackToAutodetectDeployedContract = (contract, contractName) =>
  * @returns {Promise<object>} The contract artifact.
  */
 // eslint-disable-next-line consistent-return
-const getContractArtifact = contractName => {
+const getContractArtifact = async contractName => {
   if (config.contracts.url) {
     // For frontend apps you can pass the url of the contracts
     // eslint-disable-next-line no-undef
-    return fetch(`${config.contracts.url}/${contractName}.json`)
-      .then(res => res.json())
-      .then(data => Promise.resolve(data))
-      .catch(err => Promise.reject(err));
+    return (await fetch(`${config.contracts.url}/${contractName}.json`)).json();
   } else if (config.contracts.dir) {
     // For backend servers you can pass the path of the contracts
     // eslint-disable-next-line import/no-dynamic-require, global-require
-    return Promise.resolve(require(path.join(config.contracts.dir, `${contractName}.json`)));
+    return require(path.join(config.contracts.dir, `${contractName}.json`));
   }
 };
 
@@ -121,36 +119,42 @@ const getContractArtifact = contractName => {
  * Returns the contract instance by name.
  * @type {Function}
  */
-tx.contractInstance = _.memoize(contractName => {
+tx.contractInstance = _.memoize(async contractName => {
   try {
+    // Assert valid contract name.
     if (!/^\w+$/.test(contractName)) {
       throw new Error(`Invalid contract name "${contractName}"`);
     }
     // Load contract artifact file.
-    return getContractArtifact(contractName).then(contractArtifact => {
-      // Create contract object.
-      const contract = truffleContract(contractArtifact);
-      contract.setProvider(tx.web3.currentProvider);
+    const contractArtifact = await getContractArtifact(contractName);
+    // Create contract object.
+    const contract = truffleContract(contractArtifact);
+    contract.setProvider(tx.web3.currentProvider);
 
-      if (_.has(config, ['contracts', 'addresses', contractName])) {
-        const contractAddress = config.contracts.addresses[contractName];
-        try {
-          return contract.at(contractAddress).then(assertCodeAtAddress);
-        } catch (e) {
-          logger.debug(
-            `Contract '${contractName}' could not be found at configured '${contractAddress}'. 
-            Falling back to autodetect`
-          );
-          return fallbackToAutodetectDeployedContract(contract, contractName);
-        }
-      } else {
-        logger.debug(`Address not configured for '${contractName}' contract. Using autodetect...`);
-        return fallbackToAutodetectDeployedContract(contract, contractName);
+    // Load contract by static address if configured.
+    if (_.has(config, ['contracts', 'addresses', contractName])) {
+      const contractAddress = config.contracts.addresses[contractName];
+      try {
+        await assertCodeAtAddress(contractAddress);
+        return contract.at(contractAddress);
+      } catch (error) {
+        logger.debug(
+          // eslint-disable-next-line max-len
+          `Contract '${contractName}' could not be found at configured address: '${contractAddress}'. Using autodetect...`
+        );
+        return detectDeployedContract(contract, contractName);
       }
-    });
+    }
+
+    logger.debug(`Address is not configured for '${contractName}' contract. Using autodetect...`);
+    return detectDeployedContract(contract, contractName);
   } catch (error) {
     logger.error(`Error loading contract ${contractName}`, error);
-    return Promise.reject(new CvcError(`Error loading contract: ${contractName}`, error));
+    if (error instanceof CvcError) {
+      throw error;
+    } else {
+      throw new CvcError(`Error loading contract: ${contractName}`, error);
+    }
   }
 });
 
@@ -166,9 +170,9 @@ tx.contractInstance = _.memoize(contractName => {
  * @param {Array<string>} contractNames - The names of the contracts to retrieve.
  * @return {Promise<Object>} A promise of an object of the form { contractName : contractInstance}
  */
-tx.contractInstances = function(...contractNames) {
-  const contractInstancePromises = contractNames.map(tx.contractInstance);
-  return Promise.all(contractInstancePromises).then(contractInstances => _.zipObject(contractNames, contractInstances));
+tx.contractInstances = async function(...contractNames) {
+  const contractInstances = await Promise.all(contractNames.map(tx.contractInstance));
+  return _.zipObject(contractNames, contractInstances);
 };
 
 /**
@@ -182,17 +186,7 @@ tx.loadContracts = () => tx.contractInstances(...CONTRACTS);
  * Return latest known block number from the current network.
  * @returns {Promise<number>} Block number.
  */
-tx.blockNumber = function() {
-  return new Promise((resolve, reject) => {
-    tx.web3.eth.getBlockNumber((error, result) => {
-      if (error) {
-        reject(new Error(error));
-      } else {
-        resolve(result);
-      }
-    });
-  });
-};
+tx.blockNumber = util.promisify(cb => tx.web3.eth.getBlockNumber(cb));
 
 /**
  * Returns an event produced by specific smart contract.
@@ -206,27 +200,19 @@ tx.blockNumber = function() {
  * (latest may be given to mean the most recent and pending currently mining, block). By default latest.
  * @returns {Promise<object>} A promise of list.
  */
-tx.getEvent = function(contractName, eventName, filterBy = {}, additionalFilterObject = {}) {
+tx.getEvent = async function(contractName, eventName, filterBy = {}, additionalFilterObject = {}) {
   // Set marketplace deployment block as default starting point to search events from.
   _.defaults(additionalFilterObject, { fromBlock: config.marketplaceDeploymentBlock });
-  return tx
-    .contractInstance(contractName)
-    .then(instance => {
-      const contract = tx.web3.eth.contract(instance.abi).at(instance.address);
-      const event = contract[eventName](filterBy, additionalFilterObject);
-      return new Promise((resolve, reject) => {
-        event.get((error, data) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    })
-    .catch(error => {
-      throw mapError(error);
-    });
+
+  try {
+    const instance = await tx.contractInstance(contractName);
+    const contract = tx.web3.eth.contract(instance.abi).at(instance.address);
+    const event = contract[eventName](filterBy, additionalFilterObject);
+
+    return util.promisify(cb => event.get(cb))();
+  } catch (error) {
+    throw mapError(error);
+  }
 };
 
 /**
@@ -239,27 +225,19 @@ tx.getEvent = function(contractName, eventName, filterBy = {}, additionalFilterO
  * (latest may be given to mean the most recent and pending currently mining, block). By default latest.
  * @returns {Promise<object[]>} A promise of list.
  */
-tx.getAllEvents = function(contractName, additionalFilterObject) {
+tx.getAllEvents = async function(contractName, additionalFilterObject) {
   // Set marketplace deployment block as default starting point to search events from.
   _.defaults(additionalFilterObject, { fromBlock: config.marketplaceDeploymentBlock });
-  return tx
-    .contractInstance(contractName)
-    .then(instance => {
-      const contract = tx.web3.eth.contract(instance.abi).at(instance.address);
-      const events = contract.allEvents(additionalFilterObject);
-      return new Promise((resolve, reject) => {
-        events.get((error, data) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    })
-    .catch(error => {
-      throw mapError(error);
-    });
+
+  try {
+    const instance = await tx.contractInstance(contractName);
+    const contract = tx.web3.eth.contract(instance.abi).at(instance.address);
+    const events = contract.allEvents(additionalFilterObject);
+
+    return util.promisify(cb => events.get(cb))();
+  } catch (error) {
+    throw mapError(error);
+  }
 };
 
 /**
@@ -269,13 +247,12 @@ tx.getAllEvents = function(contractName, additionalFilterObject) {
  * @param {Array<*>} params - The contract method params.
  * @returns {Promise<*>} The method call result.
  */
-tx.call = function(contractName, method, params) {
-  return tx
-    .contractInstance(contractName)
-    .then(instance => instance[method](...params))
-    .catch(error => {
-      throw mapError(error);
-    });
+tx.call = async function(contractName, method, params) {
+  try {
+    return (await tx.contractInstance(contractName))[method](...params);
+  } catch (error) {
+    throw mapError(error);
+  }
 };
 
 /**
@@ -338,17 +315,29 @@ const withOptionalNonce = (nonce, transaction) =>
  */
 tx.createTx = async function({ fromAddress, contractName, method, args, assignedNonce = false, txOptions = {} }) {
   // merging txOptions
-  const updatedTxOptions = _.merge({}, { gas: TX_GAS_LIMIT, gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, {
+    gas: TX_GAS_LIMIT,
+    gasPrice: TX_GAS_PRICE,
+    chainId: TX_CHAIN_ID
+  });
 
-  // determining nonce and instance promises
+  // determining contract instance promise
   const instancePromise = tx.contractInstance(contractName);
-  let noncePromise = updatedTxOptions.nonce ? Promise.resolve(updatedTxOptions.nonce) : undefined;
-  if (!noncePromise) {
-    noncePromise = assignedNonce ? nonceManager.getNonceForAccount(fromAddress) : Promise.resolve();
+
+  // determining tx nonce promise
+  let noncePromise = Promise.resolve();
+  let nonceReleasePromise = Promise.resolve();
+  if (updatedTxOptions.nonce) {
+    // Use nonce provided by client.
+    noncePromise = Promise.resolve(updatedTxOptions.nonce);
+  } else if (assignedNonce) {
+    // Let nonce manager to decide nonce value.
+    noncePromise = nonceManager.getNonceForAccount(fromAddress);
+    nonceReleasePromise = nonce => nonceManager.releaseAccountNonce(fromAddress, nonce);
   }
 
   // create a transaction from the input parameters, the contract instance, and an optional nonce
-  const createTransaction = async ([instance, nonce]) => {
+  const createTransaction = async (instance, nonce) => {
     try {
       return withOptionalNonce(nonce, {
         from: fromAddress,
@@ -367,18 +356,18 @@ tx.createTx = async function({ fromAddress, contractName, method, args, assigned
         args,
         updatedTxOptions
       });
-      if (!_.has(txOptions, 'nonce') && assignedNonce) {
-        await nonceManager.releaseAccountNonce(fromAddress, nonce);
-      }
+
+      await nonceReleasePromise(nonce);
       throw mapError(error);
     }
   };
 
-  return Promise.all([instancePromise, noncePromise])
-    .then(createTransaction)
-    .catch(error => {
-      throw mapError(error);
-    });
+  try {
+    const [instance, nonce] = await Promise.all([instancePromise, noncePromise]);
+    return createTransaction(instance, nonce);
+  } catch (error) {
+    throw mapError(error);
+  }
 };
 
 /**
@@ -400,27 +389,49 @@ tx.createPlatformCoinTransferTx = async function({
   txOptions = {}
 }) {
   // Merging txOptions
-  const updatedTxOptions = _.merge({}, { gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID }, txOptions);
+  const updatedTxOptions = _.defaults({}, txOptions, { gasPrice: TX_GAS_PRICE, chainId: TX_CHAIN_ID });
 
-  // Generating nonce if required
-  let noncePromise = updatedTxOptions.nonce ? Promise.resolve(updatedTxOptions.nonce) : undefined;
-  if (!noncePromise) {
-    noncePromise = assignedNonce ? nonceManager.getNonceForAccount(fromAddress) : Promise.resolve();
+  // determining tx nonce promise
+  let noncePromise = Promise.resolve();
+  let nonceReleasePromise = Promise.resolve();
+  if (updatedTxOptions.nonce) {
+    // Use nonce provided by client.
+    noncePromise = Promise.resolve(updatedTxOptions.nonce);
+  } else if (assignedNonce) {
+    // Let nonce manager to decide nonce value.
+    noncePromise = nonceManager.getNonceForAccount(fromAddress);
+    nonceReleasePromise = nonce => nonceManager.releaseAccountNonce(fromAddress, nonce);
   }
 
-  const createTransaction = nonce =>
-    withOptionalNonce(nonce, {
-      from: fromAddress,
-      to: toAddress,
-      value,
-      gas: '0x5208', // 21000
-      gasPrice: `0x${updatedTxOptions.gasPrice.toString(16)}`,
-      chainId: `0x${updatedTxOptions.chainId.toString(16)}`
-    });
+  const createTransaction = async nonce => {
+    try {
+      return withOptionalNonce(nonce, {
+        from: fromAddress,
+        to: toAddress,
+        value,
+        gas: '0x5208', // 21000
+        gasPrice: `0x${updatedTxOptions.gasPrice.toString(16)}`,
+        chainId: `0x${updatedTxOptions.chainId.toString(16)}`
+      });
+    } catch (error) {
+      logger.error(`Error during creating tx: ${error.message}`, error, {
+        fromAddress,
+        toAddress,
+        value,
+        updatedTxOptions
+      });
 
-  return noncePromise.then(createTransaction).catch(error => {
+      await nonceReleasePromise(nonce);
+      throw mapError(error);
+    }
+  };
+
+  try {
+    const nonce = await noncePromise;
+    return createTransaction(nonce);
+  } catch (error) {
     throw mapError(error);
-  });
+  }
 };
 
 /**
@@ -429,15 +440,13 @@ tx.createPlatformCoinTransferTx = async function({
  * @returns {Promise<TransactionReceipt|CvcError|Error>} A promise of the transaction receipt or error.
  */
 tx.getTransactionReceipt = function(txHash) {
-  return new Promise((resolve, reject) => {
-    tx.web3.eth.getTransactionReceipt(txHash, (error, result) => {
-      if (error) {
-        logger.error(`Error retrieving transaction receipt for ${txHash}.`, error);
-        return reject(mapError(error));
-      }
-      return resolve(result);
-    });
-  });
+  const getTransactionReceiptPromise = util.promisify(cb => tx.web3.eth.getTransactionReceipt(txHash, cb));
+  try {
+    return getTransactionReceiptPromise();
+  } catch (error) {
+    logger.error(`Error retrieving transaction receipt for ${txHash}.`, error);
+    throw mapError(error);
+  }
 };
 
 /**
@@ -453,19 +462,18 @@ tx.getTransactionReceiptMined = function(txHash, timeout = TX_MINING_TIMEOUT) {
   // How many attempts to perform: timeout in seconds times attempts per second.
   const attemptLimit = Math.ceil(timeout * (1000 / interval));
 
-  const transactionReceiptAsync = function(resolve, reject, attemptCount = 0) {
-    return tx.getTransactionReceipt(txHash).then(receipt => {
-      if (receipt) {
-        // Receipt is retrieved successfully.
-        resolve(receipt);
-      } else if (attemptCount >= attemptLimit) {
-        // We reached the allowed timeout - error out.
-        reject(`getTransactionReceiptMined timeout for ${txHash}`);
-      } else {
-        // Increment attempt count and try to get receipt again.
-        setTimeout(() => transactionReceiptAsync(resolve, reject, attemptCount + 1), interval);
-      }
-    });
+  const transactionReceiptAsync = async function(resolve, reject, attemptCount = 0) {
+    const receipt = await tx.getTransactionReceipt(txHash);
+    if (receipt) {
+      // Receipt is retrieved successfully.
+      resolve(receipt);
+    } else if (attemptCount >= attemptLimit) {
+      // We reached the allowed timeout - error out.
+      reject(`getTransactionReceiptMined timeout for ${txHash}`);
+    } else {
+      // Increment attempt count and try to get receipt again.
+      setTimeout(() => transactionReceiptAsync(resolve, reject, attemptCount + 1), interval);
+    }
   };
 
   if (Array.isArray(txHash)) {
@@ -484,16 +492,15 @@ tx.getTransactionReceiptMined = function(txHash, timeout = TX_MINING_TIMEOUT) {
  * @param {string} address - The address to get the numbers of transactions from.
  * @returns {Promise<number|CvcError|Error>} A promise of the transaction count or error.
  */
-tx.getTransactionCount = address =>
-  new Promise((resolve, reject) => {
-    tx.web3.eth.getTransactionCount(address, (error, txCount) => {
-      if (error) {
-        logger.error(`Error retrieving transaction count for ${address}.`, error);
-        return reject(mapError(error));
-      }
-      return resolve(txCount);
-    });
-  });
+tx.getTransactionCount = address => {
+  const getTransactionCountPromise = util.promisify(cb => tx.web3.eth.getTransactionCount(address, cb));
+  try {
+    return getTransactionCountPromise();
+  } catch (error) {
+    logger.error(`Error retrieving transaction count for ${address}.`, error);
+    throw mapError(error);
+  }
+};
 
 /**
  * Waits for transaction to be mined on blockchain and returns the transaction receipt.
@@ -501,18 +508,9 @@ tx.getTransactionCount = address =>
  * @param {number} timeout - Max allowed waiting time before error.
  * @returns {Promise<TransactionReceipt|CvcError|Error>} A promise of the transaction receipt or error.
  */
-tx.waitForMine = (txSendPromise, timeout = TX_MINING_TIMEOUT) =>
-  txSendPromise
-    .then(({ transactionHash: txHash }) => tx.getTransactionReceiptMined(txHash, timeout))
-    .then(tx.assertTxReceipt);
-
-/**
- * Checks transaction status & rises error if transaction failed.
- * @param {TransactionReceipt} receipt - A transaction receipt object.
- * @returns {TransactionReceipt} A transaction receipt object.
- * @throws {Error}
- */
-tx.assertTxReceipt = receipt => {
+tx.waitForMine = async (txSendPromise, timeout = TX_MINING_TIMEOUT) => {
+  const { transactionHash: txHash } = await txSendPromise;
+  const receipt = await tx.getTransactionReceiptMined(txHash, timeout);
   // There are 2 new statuses introduced in Byzantium: 0x0 = fail; 0x1 = success.
   if (Number(receipt.status) === 0) {
     throw new Error('Tx failed');
