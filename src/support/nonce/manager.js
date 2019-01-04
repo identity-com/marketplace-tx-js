@@ -94,7 +94,7 @@ class NonceManager {
         return false;
       });
 
-      // Get all known transactions by combining stored nonces with data from tx pool.
+      // Get all known transactions by combining assigned nonces with data from tx pool.
       const knownTransactions = _.assign({}, assignedNonces, pending, queued);
 
       // Get all known nonces.
