@@ -13,7 +13,7 @@ let store;
 
 describe('Store: inmemory.js', () => {
   beforeEach(() => {
-    store = new Store({ LOCK_ACQUIRE_TIMEOUT: 300 });
+    store = new Store({ lockAcquireTimeout: 300 });
   });
   afterEach(() => store.clear());
 

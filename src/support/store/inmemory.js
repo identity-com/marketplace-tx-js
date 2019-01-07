@@ -8,32 +8,32 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 module.exports = class InMemory {
   constructor({
-    LOCK_CHECK_INTERVAL = DEFAULT_LOCK_CHECK_INTERVAL,
-    LOCK_ACQUIRE_TIMEOUT = DEFAULT_LOCK_ACQUIRE_TIMEOUT,
-    LOCK_TIMEOUT = DEFAULT_LOCK_TIMEOUT
+    lockCheckInterval = DEFAULT_LOCK_CHECK_INTERVAL,
+    lockAcquireTimeout = DEFAULT_LOCK_ACQUIRE_TIMEOUT,
+    lockTimeout = DEFAULT_LOCK_TIMEOUT
   }) {
-    this.constants = { LOCK_CHECK_INTERVAL, LOCK_ACQUIRE_TIMEOUT, LOCK_TIMEOUT };
+    this.config = { lockCheckInterval, lockAcquireTimeout, lockTimeout };
     this.store = {};
     this.locked = {};
   }
 
   async get(key) {
-    const { LOCK_CHECK_INTERVAL, LOCK_ACQUIRE_TIMEOUT, LOCK_TIMEOUT } = this.constants;
-    const maxAttempts = Math.floor(LOCK_ACQUIRE_TIMEOUT / LOCK_CHECK_INTERVAL);
+    const { lockCheckInterval, lockAcquireTimeout, lockTimeout } = this.config;
+    const maxAttempts = Math.floor(lockAcquireTimeout / lockCheckInterval);
     // Wait until key is availabe for locking
     for (let attempts = 0; attempts < maxAttempts && this.locked[key]; attempts++) {
       // eslint-disable-next-line no-await-in-loop
-      await sleep(LOCK_CHECK_INTERVAL);
+      await sleep(lockCheckInterval);
     }
     // Still locked after all attempts
     if (this.locked[key]) {
-      throw new Error(`Cannot obtain lock for ${key} after ${LOCK_ACQUIRE_TIMEOUT}ms of ${maxAttempts} attempts`);
+      throw new Error(`Cannot obtain lock for ${key} after ${lockAcquireTimeout}ms of ${maxAttempts} attempts`);
     }
     // Set a timer to auto-unlock the key in case release or put is never called for whatever reason
     this.locked[key] = setTimeout(() => {
-      logger.warn(`Lock on ${key} is timed out. No put or release called within ${LOCK_TIMEOUT} ms.`);
+      logger.warn(`Lock on ${key} is timed out. No put or release called within ${lockTimeout} ms.`);
       this.release(key);
-    }, LOCK_TIMEOUT);
+    }, lockTimeout);
     return this.store[key] || null;
   }
 
