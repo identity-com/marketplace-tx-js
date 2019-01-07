@@ -68,48 +68,60 @@ class NonceManager {
   async getNonceForAccount(address) {
     logger.debug(`Requesting nonce for address ${address}`);
 
-    // Retrieve stored nonces for the provided account.
-    let nonces = await this.store.get(address);
-    // Retrieve current transaction count and transaction pool state for the provided account.
-    const [txCount, { pending, queued }] = await Promise.all([
-      this.getTransactionCount(address),
-      this.inspectTxPool(address)
-    ]);
+    // Retrieve stored nonces for the provided account and
+    // acquire lock to avoid race conditions when modifying the list of used nonces.
+    const storedNonces = await this.store.get(address);
 
-    // Keep nonces which are not mined yet
-    // and release nonces which values are below the account tx count (i.e. lowest possible value).
-    nonces = _.pickBy(nonces, (value, nonce) => {
-      if (nonce >= txCount) return true;
-      logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
-      return false;
-    });
+    try {
+      // Retrieve current transaction count and transaction pool state for the provided account.
+      const [txCount, { pending, queued }] = await Promise.all([
+        this.getTransactionCount(address),
+        this.inspectTxPool(address)
+      ]);
 
-    // Get all known transactions by combining local cache with data from tx pool.
-    const knownTransactions = _.assign({}, nonces, pending, queued);
+      // Keep nonces which are not mined yet
+      // and release nonces which values are below the account tx count (i.e. lowest possible value).
+      const assignedNonces = _.pickBy(storedNonces, (value, nonce) => {
+        if (nonce >= txCount) return true;
+        logger.debug(`Account '${address}', nonce released: ${Number(nonce)}`);
+        return false;
+      });
 
-    // Get all used nonces.
-    const usedNonces = _.keys(knownTransactions);
-    if (usedNonces.length) {
-      logger.debug(`Account '${address}', used nonces: ${usedNonces.join(', ')}`);
+      // Get all known transactions by combining assigned nonces with data from tx pool.
+      const knownTransactions = _.assign({}, assignedNonces, pending, queued);
+
+      // Get all known nonces.
+      const knownNonces = _.keys(knownTransactions);
+      if (knownNonces.length) {
+        logger.debug(`Account '${address}', used nonces: ${knownNonces.join(', ')}`);
+      }
+
+      // Calculate max known nonce.
+      const maxKnownNonce = knownNonces.reduce((a, b) => Math.max(a, b), txCount);
+
+      // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
+      let nextNonce = txCount;
+      while (nextNonce <= maxKnownNonce) {
+        // Stop at the first non-used nonce (i.e. first gap).
+        if (!(nextNonce in knownTransactions)) break;
+        // Increment nonce. If no gaps found, return the value next after max used nonce.
+        nextNonce += 1;
+      }
+
+      // Mark this nonce as assigned to make it unavailable for others
+      assignedNonces[nextNonce] = true;
+
+      // Save the list of assigned nonces and release storage lock for the account
+      await this.store.put(address, assignedNonces);
+      logger.debug(`Account '${address}', nonce acquired: ${nextNonce}`);
+
+      return nextNonce;
+    } catch (error) {
+      logger.error(`Error calculating nonce for ${address}: ${error.message}`, mapError(error));
+      // Release the lock for other threads, hope they will not get the same error
+      await this.store.release(address);
+      throw error;
     }
-
-    // Calculate max used nonce.
-    const maxUsedNonce = usedNonces.reduce((a, b) => Math.max(a, b), txCount);
-
-    // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
-    let nextNonce = txCount;
-    while (nextNonce <= maxUsedNonce) {
-      // Stop at the first non-used nonce (i.e. first gap).
-      if (!(nextNonce in knownTransactions)) break;
-      // Increment nonce. If no gaps found, return the value next after max used nonce.
-      nextNonce += 1;
-    }
-
-    nonces[nextNonce] = true;
-    await this.store.put(address, nonces);
-    logger.debug(`Account '${address}', nonce acquired: ${nextNonce}`);
-
-    return nextNonce;
   }
 
   /**

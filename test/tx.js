@@ -13,7 +13,7 @@ describe('tx.js', () => {
   describe('when createTx throws', () => {
     // eslint-disable-next-line global-require
     const tx = require('../src/support/tx');
-    let releaseNonceSpy;
+    let releaseNonceStub;
     beforeEach('stub', () => {
       const getDataApplyStub = sandbox.stub().throws('Error', 'Invalid number of arguments to Solidity function');
       const contractInstanceStub = {
@@ -21,7 +21,7 @@ describe('tx.js', () => {
       };
       sandbox.stub(tx, 'contractInstance').resolves(contractInstanceStub);
       sandbox.stub(nonce, 'getNonceForAccount').resolves(12345);
-      releaseNonceSpy = sandbox.spy(nonce, 'releaseAccountNonce');
+      releaseNonceStub = sandbox.stub(nonce, 'releaseAccountNonce');
     });
 
     afterEach(() => {
@@ -39,7 +39,7 @@ describe('tx.js', () => {
         })
       ).to.be.rejectedWith('Invalid number of arguments to Solidity function');
 
-      expect(releaseNonceSpy.calledOnceWithExactly('0x48089757dbc23bd8e49436247c9966ff15802978', 12345)).to.be.true;
+      expect(releaseNonceStub.calledOnceWithExactly('0x48089757dbc23bd8e49436247c9966ff15802978', 12345)).to.be.true;
     });
   });
 
