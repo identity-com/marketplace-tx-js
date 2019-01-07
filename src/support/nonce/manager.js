@@ -68,13 +68,9 @@ class NonceManager {
   async getNonceForAccount(address) {
     logger.debug(`Requesting nonce for address ${address}`);
 
-    // First acquire lock to avoid race conditions when modifying the list of used nonces
-    try {
-      await this.store.lock(address);
-    } catch (error) {
-      logger.error(`Error during acquiring lock for ${address}: ${error.message}`, mapError(error));
-      throw error;
-    }
+    // Retrieve stored nonces for the provided account and
+    // acquire lock to avoid race conditions when modifying the list of used nonces.
+    const storedNonces = await this.store.get(address);
 
     try {
       // Retrieve current transaction count and transaction pool state for the provided account.
@@ -82,9 +78,6 @@ class NonceManager {
         this.getTransactionCount(address),
         this.inspectTxPool(address)
       ]);
-
-      // Retrieve stored nonces for the provided account.
-      const storedNonces = await this.store.get(address);
 
       // Keep nonces which are not mined yet
       // and release nonces which values are below the account tx count (i.e. lowest possible value).

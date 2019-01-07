@@ -12,13 +12,12 @@ chai.use(require('chai-as-promised'));
 const { expect } = chai;
 const web3 = new Web3(new FakeProvider());
 web3admin.extend(web3);
-const store = new InMemory();
+const store = new InMemory({});
 const account = '0x123';
 
 describe('nonce manager', () => {
   let getTransactionCountStub;
   let txpoolInspectStub;
-  let storeLockStub;
   let storeGetStub;
   let storePutStub;
   let storeReleaseStub;
@@ -29,7 +28,6 @@ describe('nonce manager', () => {
   });
 
   beforeEach(() => {
-    storeLockStub = sandbox.stub(store, 'lock');
     storeGetStub = sandbox.stub(store, 'get');
     storePutStub = sandbox.stub(store, 'put');
     storeReleaseStub = sandbox.stub(store, 'release');
@@ -49,7 +47,6 @@ describe('nonce manager', () => {
       const manager = new NonceManager(web3, store);
       const nonce = await manager.getNonceForAccount(account);
 
-      expect(storeLockStub.calledOnceWith(account)).to.be.true;
       expect(storeGetStub.calledOnceWith(account)).to.be.true;
       expect(storePutStub.calledOnce).to.be.true;
       expect(getTransactionCountStub.calledOnce).to.be.true;
@@ -147,29 +144,27 @@ describe('nonce manager', () => {
   });
 
   describe('error handling and locking storage', () => {
-    it('throws when lock has failed', async () => {
-      storeLockStub.rejects(new Error('Some storage error'));
+    it('throws when get has failed', async () => {
+      storeGetStub.rejects(new Error('Some storage error'));
 
       const manager = new NonceManager(web3, store);
       await expect(manager.getNonceForAccount(account)).to.be.rejectedWith('Some storage error');
 
-      expect(storeLockStub.calledOnceWith(account)).to.be.true;
-      expect(storeGetStub.called).to.be.false;
       expect(storePutStub.called).to.be.false;
 
       expect(getTransactionCountStub.called).to.be.false;
       expect(txpoolInspectStub.called).to.be.false;
     });
 
-    it('releases and throws when get has failed', async () => {
-      storeGetStub.rejects(new Error('Some storage error'));
+    it('releases and throws when txpool lookup has failed', async () => {
+      storeGetStub.resolves({});
       getTransactionCountStub.yields(null, 0);
-      txpoolInspectStub.yields(null, { pending: {}, queued: {} });
+      txpoolInspectStub.yields(new Error('Some storage error'), null);
 
       const manager = new NonceManager(web3, store);
       await expect(manager.getNonceForAccount(account)).to.be.rejectedWith('Some storage error');
 
-      expect(storeLockStub.calledOnceWith(account)).to.be.true;
+      expect(storeGetStub.calledOnceWith(account)).to.be.true;
       expect(storePutStub.called).to.be.false;
       expect(storeReleaseStub.called).to.be.true;
 
@@ -186,7 +181,6 @@ describe('nonce manager', () => {
       const manager = new NonceManager(web3, store);
       await expect(manager.getNonceForAccount(account)).to.be.rejectedWith('Some storage error');
 
-      expect(storeLockStub.calledOnceWith(account)).to.be.true;
       expect(storeGetStub.calledOnceWith(account)).to.be.true;
       expect(storeReleaseStub.called).to.be.true;
 
