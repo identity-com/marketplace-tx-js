@@ -36,6 +36,7 @@ describe('sender.js', () => {
     before(() => {
       // Whenever nonce is required return default one
       sandbox.stub(nonce, 'getNonceForAccount').resolves(0);
+      sandbox.stub(nonce, 'releaseAccountNonces').resolves();
 
       // Stub create tx to avoid loading contract instance for generating data
       sandbox.stub(tx, 'createTx').callsFake(txParams =>

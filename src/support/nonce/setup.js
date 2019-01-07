@@ -5,7 +5,7 @@ let nonceManager;
 
 module.exports = (web3, nonceStore) => {
   if (!nonceManager) {
-    nonceManager = new NonceManager(web3, nonceStore || new Store());
+    nonceManager = new NonceManager(web3, nonceStore || new Store({}));
   }
 
   return nonceManager;

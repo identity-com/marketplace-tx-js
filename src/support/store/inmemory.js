@@ -1,31 +1,39 @@
-const LOCK_CHECK_INTERVAL = 100; // 100 ms
-const LOCK_ACQUIRE_TIMEOUT = 45 * 1000; // 45 seconds
-const LOCK_TIMEOUT = 1000 * 30; // 30 seconds
+const logger = require('../../logger');
+
+const DEFAULT_LOCK_CHECK_INTERVAL = 100; // 100 ms
+const DEFAULT_LOCK_ACQUIRE_TIMEOUT = 45 * 1000; // 45 seconds
+const DEFAULT_LOCK_TIMEOUT = 1000 * 5; // 30 seconds
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 module.exports = class InMemory {
-  constructor() {
+  constructor({
+    lockCheckInterval = DEFAULT_LOCK_CHECK_INTERVAL,
+    lockAcquireTimeout = DEFAULT_LOCK_ACQUIRE_TIMEOUT,
+    lockTimeout = DEFAULT_LOCK_TIMEOUT
+  }) {
+    this.config = { lockCheckInterval, lockAcquireTimeout, lockTimeout };
     this.store = {};
     this.locked = {};
   }
 
-  async lock(key) {
-    const maxAttempts = Math.floor(LOCK_ACQUIRE_TIMEOUT / LOCK_CHECK_INTERVAL);
+  async get(key) {
+    const { lockCheckInterval, lockAcquireTimeout, lockTimeout } = this.config;
+    const maxAttempts = Math.floor(lockAcquireTimeout / lockCheckInterval);
     // Wait until key is availabe for locking
     for (let attempts = 0; attempts < maxAttempts && this.locked[key]; attempts++) {
       // eslint-disable-next-line no-await-in-loop
-      await sleep(LOCK_CHECK_INTERVAL);
+      await sleep(lockCheckInterval);
     }
     // Still locked after all attempts
     if (this.locked[key]) {
-      throw new Error(`Cannot obtain lock for ${key} after ${LOCK_ACQUIRE_TIMEOUT}ms of ${maxAttempts} attempts`);
+      throw new Error(`Cannot obtain lock for ${key} after ${lockAcquireTimeout}ms of ${maxAttempts} attempts`);
     }
     // Set a timer to auto-unlock the key in case release or put is never called for whatever reason
-    this.locked[key] = setTimeout(() => this.release(key), LOCK_TIMEOUT);
-  }
-
-  get(key) {
+    this.locked[key] = setTimeout(() => {
+      logger.warn(`Lock on ${key} is timed out. No put or release called within ${lockTimeout} ms.`);
+      this.release(key);
+    }, lockTimeout);
     return this.store[key] || null;
   }
 
@@ -39,7 +47,7 @@ module.exports = class InMemory {
       clearTimeout(this.locked[key]);
     }
 
-    this.locked[key] = false;
+    delete this.locked[key];
   }
 
   keys() {
@@ -48,6 +56,6 @@ module.exports = class InMemory {
 
   clear() {
     this.store = {};
-    this.keys().map(key => this.release(key));
+    Object.keys(this.locked).map(key => this.release(key));
   }
 };
