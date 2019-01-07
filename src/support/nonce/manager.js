@@ -106,15 +106,14 @@ class NonceManager {
       // Calculate max known nonce.
       const maxKnownNonce = knownNonces.reduce((a, b) => Math.max(a, b), txCount);
 
-      let nextNonce;
-      for (
-        // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
-        nextNonce = txCount;
+      // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
+      let nextNonce = txCount;
+      while (nextNonce <= maxKnownNonce) {
         // Stop at the first non-used nonce (i.e. first gap).
-        nextNonce <= maxKnownNonce && nextNonce in knownTransactions;
+        if (!(nextNonce in knownTransactions)) break;
         // Increment nonce. If no gaps found, return the value next after max used nonce.
-        nextNonce++
-      );
+        nextNonce += 1;
+      }
 
       // Mark this nonce as assigned to make it unavailable for others
       assignedNonces[nextNonce] = true;
