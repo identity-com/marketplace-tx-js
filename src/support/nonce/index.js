@@ -5,6 +5,6 @@
  * This file should be imported only after setup has been
  * called for the first time with required dependencies:
  *
- * require('./support/nonce/setup')(web3, nonceStore);
+ * require('./support/nonce/setup')(web3, nonceManager);
  */
 module.exports = require('./setup')();

@@ -1,0 +1,40 @@
+const _ = require('lodash');
+
+module.exports = {
+  calculateNonce(debugLog, storedNonces, txCount, { pending, queued }) {
+    // Keep nonces which are not mined yet
+    // and release nonces which values are below the account tx count (i.e. lowest possible value).
+    const assignedNonces = _.pickBy(storedNonces, (value, nonce) => nonce >= txCount);
+    if (assignedNonces.length !== storedNonces.length) {
+      debugLog(`released nonces: ${_.difference(storedNonces, assignedNonces).join(', ')}`);
+    }
+
+    // Get all known transactions by combining assigned nonces with data from tx pool.
+    const knownTransactions = _.assign({}, assignedNonces, pending, queued);
+
+    // Get all known nonces.
+    const knownNonces = _.keys(knownTransactions);
+    if (knownNonces.length) {
+      debugLog(`known nonces: ${knownNonces.join(', ')}`);
+    }
+
+    // Calculate max known nonce.
+    const maxKnownNonce = knownNonces.reduce((a, b) => Math.max(a, b), txCount);
+
+    // Go from current tx count value (i.e. lowest possible value) to max known nonce looking for the gaps.
+    let nextNonce = txCount;
+    while (nextNonce <= maxKnownNonce) {
+      // Stop at the first non-used nonce (i.e. first gap).
+      if (!(nextNonce in knownTransactions)) break;
+      // Increment nonce. If no gaps found, return the value next after max used nonce.
+      nextNonce += 1;
+    }
+
+    // Mark this nonce as assigned to make it unavailable for others
+    assignedNonces[nextNonce] = true;
+
+    debugLog(`nonce acquired: ${nextNonce}`);
+
+    return { nextNonce, assignedNonces };
+  }
+};
