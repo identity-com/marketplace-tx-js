@@ -5,7 +5,7 @@ module.exports = {
     // Keep nonces which are not mined yet
     // and release nonces which values are below the account tx count (i.e. lowest possible value).
     const acquiredNonces = _.pickBy(storedNonces, (value, nonce) => nonce >= txCount);
-    if (acquiredNonces.length !== storedNonces.length) {
+    if (_.size(acquiredNonces) !== _.size(storedNonces)) {
       debugLog(`released nonces: ${_.difference(storedNonces, acquiredNonces).join(', ')}`);
     }
 
