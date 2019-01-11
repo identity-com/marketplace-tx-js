@@ -4,13 +4,13 @@ module.exports = {
   calculateNonce(debugLog, storedNonces, txCount, { pending, queued }) {
     // Keep nonces which are not mined yet
     // and release nonces which values are below the account tx count (i.e. lowest possible value).
-    const assignedNonces = _.pickBy(storedNonces, (value, nonce) => nonce >= txCount);
-    if (assignedNonces.length !== storedNonces.length) {
-      debugLog(`released nonces: ${_.difference(storedNonces, assignedNonces).join(', ')}`);
+    const acquiredNonces = _.pickBy(storedNonces, (value, nonce) => nonce >= txCount);
+    if (acquiredNonces.length !== storedNonces.length) {
+      debugLog(`released nonces: ${_.difference(storedNonces, acquiredNonces).join(', ')}`);
     }
 
-    // Get all known transactions by combining assigned nonces with data from tx pool.
-    const knownTransactions = _.assign({}, assignedNonces, pending, queued);
+    // Get all known transactions by combining acquired nonces with data from tx pool.
+    const knownTransactions = _.assign({}, acquiredNonces, pending, queued);
 
     // Get all known nonces.
     const knownNonces = _.keys(knownTransactions);
@@ -30,11 +30,11 @@ module.exports = {
       nextNonce += 1;
     }
 
-    // Mark this nonce as assigned to make it unavailable for others
-    assignedNonces[nextNonce] = true;
+    // Mark this nonce as acquired to make it unavailable for others
+    acquiredNonces[nextNonce] = true;
 
     debugLog(`nonce acquired: ${nextNonce}`);
 
-    return { nextNonce, assignedNonces };
+    return { nextNonce, acquiredNonces };
   }
 };

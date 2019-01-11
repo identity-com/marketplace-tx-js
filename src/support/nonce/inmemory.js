@@ -32,9 +32,9 @@ class InMemoryNonceManager {
     const storedNonces = this.store[address] || {};
     const calculateDebugLog = message => logger.debug(`Nonce manager for account '${address}': ${message}`);
 
-    const { nextNonce, assignedNonces } = calculateNonce(calculateDebugLog, storedNonces, txCount, txPool);
+    const { nextNonce, acquiredNonces } = calculateNonce(calculateDebugLog, storedNonces, txCount, txPool);
 
-    this.store[address] = assignedNonces;
+    this.store[address] = acquiredNonces;
 
     return nextNonce;
   }
