@@ -29,11 +29,15 @@ class InMemoryNonceManager {
       this.accountInspector.inspectTxPool(address)
     ]);
 
+    // Everything between store read and write must be sync to avoid any race conditions.
     const storedNonces = this.store[address] || {};
+
+    // Create debug log callback to with address for easier tracing.
     const calculateDebugLog = message => logger.debug(`Nonce manager for account '${address}': ${message}`);
 
     const { nextNonce, acquiredNonces } = calculateNonce(calculateDebugLog, storedNonces, txCount, txPool);
 
+    // Since nonce manager is a singleton, this prevents other threads to use the same nonce twice.
     this.store[address] = acquiredNonces;
 
     return nextNonce;

@@ -6,7 +6,7 @@ module.exports = {
     // and release nonces which values are below the account tx count (i.e. lowest possible value).
     const acquiredNonces = _.pickBy(storedNonces, (value, nonce) => nonce >= txCount);
     if (_.size(acquiredNonces) !== _.size(storedNonces)) {
-      debugLog(`released nonces: ${_.difference(storedNonces, acquiredNonces).join(', ')}`);
+      debugLog(`released nonces: ${_.difference(_.keys(storedNonces), _.keys(acquiredNonces)).join(', ')}`);
     }
 
     // Get all known transactions by combining acquired nonces with data from tx pool.
