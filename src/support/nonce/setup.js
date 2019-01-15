@@ -1,11 +1,11 @@
-const Store = require('../store/inmemory');
-const NonceManager = require('./manager');
+const InMemoryNonceManager = require('./inmemory');
+const AccountInspector = require('./accountInspector');
 
 let nonceManager;
 
-module.exports = (web3, nonceStore) => {
+module.exports = (web3, providedNonceManager = null) => {
   if (!nonceManager) {
-    nonceManager = new NonceManager(web3, nonceStore || new Store({}));
+    nonceManager = providedNonceManager || new InMemoryNonceManager(new AccountInspector(web3));
   }
 
   return nonceManager;
