@@ -1,6 +1,6 @@
 const web3admin = require('web3admin');
 
-function MarketplaceTx({ web3, logger, nonceStore }, config) {
+function MarketplaceTx({ web3, logger, nonceManager }, config) {
   // Extend web3 to expose admin methods.
   web3admin.extend(web3);
 
@@ -9,7 +9,7 @@ function MarketplaceTx({ web3, logger, nonceStore }, config) {
   // as we store config in singleton variable and the next config requires will ignore custom values
   const resolvedConfig = require('./config')(config);
   require('./logger/setup')(logger);
-  require('./support/nonce/setup')(web3, nonceStore);
+  require('./support/nonce/setup')(web3, nonceManager);
 
   this.constants = require('./support/constants');
   this.tx = require('./support/tx');
