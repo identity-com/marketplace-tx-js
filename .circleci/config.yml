@@ -1,4 +1,6 @@
 defaults:
+  - &update_npm_on_machine
+    run: npm install npm@6.6.0 -g
   - &cache_restore
     restore_cache:
       keys:
@@ -78,6 +80,7 @@ jobs:
     - checkout
     - *cache_restore
     - *install_node
+    - *update_npm_on_machine
     - run: npm ci
     - *cache_save
     - run:
@@ -88,14 +91,14 @@ jobs:
 
   build-marketplace-tx-server-latest:
     docker:
-      - image: circleci/node:8.9
+      - image: circleci/node:8.15
 
     steps:
       - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-latest" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/dev?circle-token=${CIRCLE_TOKEN}"
 
   build-marketplace-tx-server-test:
     docker:
-      - image: circleci/node:8.9
+      - image: circleci/node:8.15
 
     steps:
       - run: curl -d "build_parameters[CIRCLE_JOB]=build-docker-test" "https://circleci.com/api/v1.1/project/github/civicteam/civic_js_node_server/tree/master?circle-token=${CIRCLE_TOKEN}"
