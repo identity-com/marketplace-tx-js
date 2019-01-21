@@ -54,7 +54,7 @@ workflows:
 jobs:
   build:
     docker:
-      - image: circleci/node:8.9
+      - image: circleci/node:8.15
       - image: trufflesuite/ganache-cli
         command: [ganache, -m, 'drum muscle maximum umbrella night initial prevent auction pink old fault media', -h, '0.0.0.0', -l, '7992181', -g, '1000000000', -e, '1000']
 
@@ -63,9 +63,8 @@ jobs:
     steps:
       - checkout
       - *cache_restore
-      - run:
-          command: |
-            npm install
+      - run: npm ci
+      - run: npm run audit-ci
       - *cache_save
       - run: npm run check-ci
 
@@ -79,7 +78,7 @@ jobs:
     - checkout
     - *cache_restore
     - *install_node
-    - run: npm install
+    - run: npm ci
     - *cache_save
     - run:
         name: Pull latest docker images

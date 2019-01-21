@@ -26,7 +26,8 @@
     "preintegration-test-ganache": "npm-run-all ganache-up build-integration-test",
     "integration-test-ganache": "npm-run-all test-blockchain-with-coverage ganache-down --continue-on-error",
     "preintegration-test-geth": "npm-run-all geth-up build-integration-test",
-    "integration-test-geth": "npm-run-all test-blockchain geth-down --continue-on-error"
+    "integration-test-geth": "npm-run-all test-blockchain geth-down --continue-on-error",
+    "audit-ci": "audit-ci --config audit-ci.json"
   },
   "repository": {
     "type": "git",
@@ -54,6 +55,7 @@
     "web3admin": "github:identity-com/web3admin#0.0.1"
   },
   "devDependencies": {
+    "audit-ci": "^1.3.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
