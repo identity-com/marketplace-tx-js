@@ -63,7 +63,7 @@ describe('tx.js', () => {
   describe('When we pass contract.url to contractInstance', () => {
     const tx = proxyquire('../src/support/tx', {
       '../config': () => ({
-        contracts: { url: './contracts' }
+        contracts: { url: 'http://localhost' }
       }),
       'truffle-contract': () => ({
         setProvider: () => {},
@@ -76,7 +76,7 @@ describe('tx.js', () => {
     });
     before('stub', () => {
       tx.web3 = sandbox.stub().returns({});
-      fetchMock.mock('./contracts/CvcEscrow.json', { contractName: 'CvcEscrow' });
+      fetchMock.mock('http://localhost/CvcEscrow.json', { contractName: 'CvcEscrow' });
     });
 
     after(() => {

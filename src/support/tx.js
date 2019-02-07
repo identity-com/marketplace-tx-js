@@ -42,6 +42,9 @@ module.exports = tx;
  * @property {string} [chainId] - The network chain id according to EIP-155.
  */
 
+// This allows to use fetch on different platforms.
+require('cross-fetch/polyfill');
+
 const util = require('util');
 // This shim is necessary so that marketplaceTx can be imported in the browser
 // See https://github.com/serverless-heaven/serverless-webpack/issues/291#issuecomment-348790713
