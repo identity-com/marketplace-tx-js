@@ -108,11 +108,9 @@ const detectDeployedContract = (contract, contractName) =>
 // eslint-disable-next-line consistent-return
 const getContractArtifact = async contractName => {
   if (config.contracts.url) {
-    // For frontend apps you can pass the url of the contracts
     // eslint-disable-next-line no-undef
     return (await fetch(`${config.contracts.url}/${contractName}.json`)).json();
   } else if (config.contracts.dir) {
-    // For backend servers you can pass the path of the contracts
     // eslint-disable-next-line import/no-dynamic-require, global-require
     return require(path.join(config.contracts.dir, `${contractName}.json`));
   }

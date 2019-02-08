@@ -14,7 +14,7 @@ We use the standard Identity.com terms for roles on the network:
 
 - __IDV__:  ID validator
 
-- __Scope request ID__: The UUID for PII request made by IDR to IDV, on the blockchain represented by a bytes32 string (64 hex chars) 
+- __Scope request ID__: The UUID for PII request made by IDR to IDV, on the blockchain represented by a bytes32 string (64 hex chars)
 
 - __Credential Item__:  Single piece of PII, can be claim (atom) or credential (molecule)
 
@@ -22,7 +22,7 @@ We use the standard Identity.com terms for roles on the network:
 
 - __Credential Item External ID__:  The External ID consists of `Type, Name and Version`, using dash as a separator, e.g. `credential-ProofOfIdentity-v1.0`.
 
-### Installing 
+### Installing
 
 For development, fetch the library from github: [https://github.com/identity-com/marketplace-tx-js](https://github.com/identity-com/marketplace-tx-js)
 
@@ -71,7 +71,7 @@ module.exports = function override(config, env) {
   // Make Babel loader read the configuration from .babelrc file.
   const babelLoader = getBabelLoader(config.module.rules);
   babelLoader.options.babelrc = true;
-  
+
   config = rewireBabelLoader.include(
     config,
     resolveApp('node_modules/marketplace-tx')
@@ -118,7 +118,7 @@ const config = { ... };
 const marketplaceTx = new MarketplaceTx(context, config);
 ```
 
-### Logging 
+### Logging
 
 MarketplaceTx will log automatically to the console. To use your own logger:
 
@@ -129,14 +129,19 @@ const marketplaceTx = new MarketplaceTx({web3, logger}, config);
 
 ### Contracts
 
-MarketplaceTx requires contract artifacts - JSON files produced by [https://github.com/identity-com/smart-contracts](Marketplace Smart Contracts library) containing contract name, ABI, addresses on specified networks. 
-You can specify the path to to the artifacts folder by passing it to the config upon the initialisation:
+MarketplaceTx requires contract artifacts - JSON files produced by [https://github.com/identity-com/smart-contracts](Marketplace Smart Contracts library) containing contract name, ABI, addresses on specified networks.
+You can specify the path to to the artifacts directory by passing it to the config upon the initialisation:
 
 ```js
 const config = { contracts: { dir: 'contracts/' } };
 const marketplaceTx = new MarketplaceTx(context, config);
 ```
 
+It is also possible to refer the artifacts by providing absolute URL:
+```js
+const config = { contracts: { url: 'https://s3.amazonaws.com/<bucket>' } };
+const marketplaceTx = new MarketplaceTx(context, config);
+```
 
 ## Usage
 
