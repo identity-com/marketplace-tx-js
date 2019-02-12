@@ -42,6 +42,9 @@ module.exports = tx;
  * @property {string} [chainId] - The network chain id according to EIP-155.
  */
 
+// This allows to use fetch on different platforms.
+require('cross-fetch/polyfill');
+
 const util = require('util');
 // This shim is necessary so that marketplaceTx can be imported in the browser
 // See https://github.com/serverless-heaven/serverless-webpack/issues/291#issuecomment-348790713
@@ -105,11 +108,9 @@ const detectDeployedContract = (contract, contractName) =>
 // eslint-disable-next-line consistent-return
 const getContractArtifact = async contractName => {
   if (config.contracts.url) {
-    // For frontend apps you can pass the url of the contracts
     // eslint-disable-next-line no-undef
     return (await fetch(`${config.contracts.url}/${contractName}.json`)).json();
   } else if (config.contracts.dir) {
-    // For backend servers you can pass the path of the contracts
     // eslint-disable-next-line import/no-dynamic-require, global-require
     return require(path.join(config.contracts.dir, `${contractName}.json`));
   }
