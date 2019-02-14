@@ -4,7 +4,7 @@ module.exports = util;
 const Bn = require('bignumber.js');
 const { ONE_CVC } = require('./constants');
 
-util.bnToHexString = number => `0x${number.toString(16)}`;
+util.bnToHexString = number => `0x${Number(number).toString(16)}`;
 
 util.hexToString = hex => {
   let s = '';
