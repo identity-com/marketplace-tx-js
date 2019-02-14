@@ -179,6 +179,7 @@ describe('Sending transactions', () => {
           }
         });
         const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
         expect(txInfo).to.have.property('nonce', txCount);
       });
 
@@ -195,6 +196,7 @@ describe('Sending transactions', () => {
           }
         });
         const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
         expect(txInfo).to.have.property('nonce', txCount);
       });
 
@@ -211,6 +213,7 @@ describe('Sending transactions', () => {
           }
         });
         const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
         expect(txInfo).to.have.property('nonce', txCount);
       });
     });
