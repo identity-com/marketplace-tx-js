@@ -191,7 +191,7 @@ describe('Sending transactions', () => {
           method: 'approve',
           params: [address1, 0],
           txOptions: {
-            nonce: `0x${Number(txCount).toString(16)}`
+            nonce: marketplaceTx.tx.web3.toHex(txCount)
           }
         });
         const txInfo = await getTransactionInfo(transactionHash);
