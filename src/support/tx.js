@@ -299,7 +299,7 @@ tx.createTxChain = function({ fromAddress, transactions, assignedNonce = false, 
 
 // return a transaction that includes a nonce if the nonce exists
 const withOptionalNonce = (nonce, transaction) =>
-  _.isNil(nonce) ? transaction : { nonce: `0x${nonce.toString(16)}`, ...transaction };
+  _.isNil(nonce) ? transaction : { nonce: tx.web3.toHex(Number(nonce)), ...transaction };
 
 /**
  * Creates a single transaction to call the specific method of the contract.
@@ -345,9 +345,9 @@ tx.createTx = async function({ fromAddress, contractName, method, args, assigned
         to: instance.address,
         value: '0x0',
         data: instance.contract[method].getData.apply(instance, args),
-        gas: `0x${updatedTxOptions.gas.toString(16)}`,
-        gasPrice: `0x${updatedTxOptions.gasPrice.toString(16)}`,
-        chainId: `0x${updatedTxOptions.chainId.toString(16)}`
+        gas: tx.web3.toHex(Number(updatedTxOptions.gas)),
+        gasPrice: tx.web3.toHex(Number(updatedTxOptions.gasPrice)),
+        chainId: tx.web3.toHex(Number(updatedTxOptions.chainId))
       });
     } catch (error) {
       logger.error(`Error during creating tx: ${error.message}`, error, {
@@ -410,9 +410,9 @@ tx.createPlatformCoinTransferTx = async function({
         from: fromAddress,
         to: toAddress,
         value,
-        gas: '0x5208', // 21000
-        gasPrice: `0x${updatedTxOptions.gasPrice.toString(16)}`,
-        chainId: `0x${updatedTxOptions.chainId.toString(16)}`
+        gas: tx.web3.toHex(Number(21000)), // the default minimal gas limit for eth transfer tx
+        gasPrice: tx.web3.toHex(Number(updatedTxOptions.gasPrice)),
+        chainId: tx.web3.toHex(Number(updatedTxOptions.chainId))
       });
     } catch (error) {
       logger.error(`Error during creating tx: ${error.message}`, error, {
