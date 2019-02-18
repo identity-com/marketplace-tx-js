@@ -165,6 +165,59 @@ describe('Sending transactions', () => {
       });
     });
 
+    describe('Setting custom nonce', () => {
+      it('sets custom nonce', async () => {
+        const txCount = await marketplaceTx.tx.getTransactionCount(address1);
+        const { transactionHash } = await marketplaceTx.sender.send({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          contractName: 'CvcToken',
+          method: 'approve',
+          params: [address1, 0],
+          txOptions: {
+            nonce: Number(txCount)
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
+        expect(txInfo).to.have.property('nonce', txCount);
+      });
+
+      it('sets custom nonce as hex value', async () => {
+        const txCount = await marketplaceTx.tx.getTransactionCount(address1);
+        const { transactionHash } = await marketplaceTx.sender.send({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          contractName: 'CvcToken',
+          method: 'approve',
+          params: [address1, 0],
+          txOptions: {
+            nonce: marketplaceTx.tx.web3.toHex(txCount)
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
+        expect(txInfo).to.have.property('nonce', txCount);
+      });
+
+      it('sets custom nonce as string value', async () => {
+        const txCount = await marketplaceTx.tx.getTransactionCount(address1);
+        const { transactionHash } = await marketplaceTx.sender.send({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          contractName: 'CvcToken',
+          method: 'approve',
+          params: [address1, 0],
+          txOptions: {
+            nonce: Number(txCount).toString()
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        await marketplaceTx.tx.getTransactionReceiptMined(transactionHash);
+        expect(txInfo).to.have.property('nonce', txCount);
+      });
+    });
+
     describe('Setting custom gas price and limit', () => {
       it('sets custom gas limit and price', async () => {
         const { transactionHash } = await marketplaceTx.sender.send({
@@ -194,6 +247,80 @@ describe('Sending transactions', () => {
           txOptions: {
             gas: 123456,
             gasPrice: 987654321
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        expect(txInfo).to.have.property('gas', 21000, 'Gas limit for ETH transfers is hardcoded to 21000');
+        expect(txInfo)
+          .to.have.property('gasPrice')
+          .bignumber.equals(987654321);
+      });
+
+      it('sets gas limit and gas price in string format', async () => {
+        const { transactionHash } = await marketplaceTx.sender.send({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          contractName: 'CvcToken',
+          method: 'approve',
+          params: [address1, 0],
+          txOptions: {
+            gas: '123456',
+            gasPrice: '987654321'
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        expect(txInfo).to.have.property('gas', 123456);
+        expect(txInfo)
+          .to.have.property('gasPrice')
+          .bignumber.equals(987654321);
+      });
+
+      it('sets gas limit and gas price for platform coin transfer in string format', async () => {
+        const { transactionHash } = await marketplaceTx.sender.sendPlatformCoin({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          value: 0,
+          toAddress: address1,
+          txOptions: {
+            gas: '123456',
+            gasPrice: '987654321'
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        expect(txInfo).to.have.property('gas', 21000, 'Gas limit for ETH transfers is hardcoded to 21000');
+        expect(txInfo)
+          .to.have.property('gasPrice')
+          .bignumber.equals(987654321);
+      });
+
+      it('sets gas limit and gas price in hex format', async () => {
+        const { transactionHash } = await marketplaceTx.sender.send({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          contractName: 'CvcToken',
+          method: 'approve',
+          params: [address1, 0],
+          txOptions: {
+            gas: '0x1e240',
+            gasPrice: '0x3ade68b1'
+          }
+        });
+        const txInfo = await getTransactionInfo(transactionHash);
+        expect(txInfo).to.have.property('gas', 123456);
+        expect(txInfo)
+          .to.have.property('gasPrice')
+          .bignumber.equals(987654321);
+      });
+
+      it('sets gas limit and gas price for platform coin transfer in hex format', async () => {
+        const { transactionHash } = await marketplaceTx.sender.sendPlatformCoin({
+          fromAddress: address1,
+          signTx: getSignTx(),
+          value: 0,
+          toAddress: address1,
+          txOptions: {
+            gas: '0x1e240',
+            gasPrice: '0x3ade68b1'
           }
         });
         const txInfo = await getTransactionInfo(transactionHash);
