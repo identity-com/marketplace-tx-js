@@ -1,3 +1,4 @@
+const ethUtil = require('ethereumjs-util');
 const util = require('util');
 
 module.exports = class AccountInspector {
@@ -46,9 +47,10 @@ module.exports = class AccountInspector {
           }
           return reject(error);
         }
+        const checksummedAddress = ethUtil.toChecksumAddress(address);
         return resolve({
-          pending: result.pending[address] || {},
-          queued: result.queued[address] || {}
+          pending: result.pending[checksummedAddress] || {},
+          queued: result.queued[checksummedAddress] || {}
         });
       });
     });
