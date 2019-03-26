@@ -2,8 +2,11 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const util = require('../src/support/nonce/util');
+const ethUtil = require('ethereumjs-util');
 const AccountInspector = require('../src/support/nonce/accountInspector');
 const InMemoryNonceManager = require('../src/support/nonce/inmemory');
+const Web3 = require('web3');
+const FakeProvider = require('web3-fake-provider');
 const _ = require('lodash');
 chai.use(require('chai-as-promised'));
 
@@ -134,6 +137,52 @@ describe('nonce management', () => {
       manager.clearAccounts();
       const nextNonce = await manager.getNonceForAccount(account);
       expect(nextNonce).to.be.equal(nonce, 'must be the same nonce, because account store was cleared');
+    });
+  });
+
+  describe('account inspector', () => {
+    let accountInspector;
+    const address1 = '0x123ABC';
+    const address2 = '0x321CBA';
+    const address1Checksummed = ethUtil.toChecksumAddress(address1);
+    const address2Checksummed = ethUtil.toChecksumAddress(address2);
+
+    const txPool = {
+      pending: {
+        [address1Checksummed]: {
+          10: 'tx'
+        },
+        [address2Checksummed]: {
+          10: 'tx'
+        }
+      },
+      queued: {
+        [address1Checksummed]: {
+          12: 'tx'
+        }
+      }
+    };
+
+    beforeEach(() => {
+      const web3 = new Web3(new FakeProvider());
+      web3.txpool = { inspect: cb => cb(null, txPool) };
+      accountInspector = new AccountInspector(web3);
+    });
+
+    it('should inspect tx pool for non-checksummed addresses', async () => {
+      const accountTxPool = await accountInspector.inspectTxPool(address1);
+      expect(accountTxPool).to.deep.equal({
+        pending: txPool.pending[address1Checksummed] || {},
+        queued: txPool.queued[address1Checksummed] || {}
+      });
+    });
+
+    it('should inspect tx pool for checksummed addresses', async () => {
+      const accountTxPool = await accountInspector.inspectTxPool(address2Checksummed);
+      expect(accountTxPool).to.deep.equal({
+        pending: txPool.pending[address2Checksummed] || {},
+        queued: txPool.queued[address2Checksummed] || {}
+      });
     });
   });
 });
