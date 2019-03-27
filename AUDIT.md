@@ -12,5 +12,3 @@ Whenever you whitelist a specific advisory it is required to refer it here and j
 | #    | Level | Module | Title | Explanation |
 |------|-------|---------|------|-------------|
 | 782 | Moderate | lodash | Prototype Pollution | Dev dependency, path: smart-contracts: > truffle-artifactor > lodash |
-| 755 | High | handlebars | Prototype Pollution | Dev dependency, path: nyc > istanbul-reports > handlebars |
-
