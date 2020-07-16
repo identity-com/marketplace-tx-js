@@ -46,7 +46,7 @@
     "ethereumjs-tx": "^1.3.3",
     "ethereumjs-util": "^5.1.2",
     "js-cache": "^1.0.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "make-error-cause": "^2.0.0",
     "serialize-error": "^2.1.0",
     "truffle-contract": "^3.0.4",
